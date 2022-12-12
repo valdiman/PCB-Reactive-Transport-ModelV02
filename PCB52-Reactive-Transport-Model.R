@@ -20,45 +20,44 @@ pcb.52 <- read_excel("dataV03.xlsx", sheet = "pcb52",
 
 rtm.PCB52 = function(t, c, parms){
   
-  #Experimental conditions
-  R <- 8.3144 #J/(mol K) molar gas constant 
+  # Experimental conditions
+  R <- 8.3144 # J/(mol K) molar gas constant 
   MH2O <- 18.0152 # g/mol water molecular weight
   Mco2 <- 44.0094 # g/mol CO2 molecular weight
-  Tst <- 25 #C air temperature
+  Tst <- 25 # C air temperature
   Tst.1 <- 273.15 + Tst # air and standard temperature in K, 25 C
-  Tw <- 20 #C water temperature
+  Tw <- 20 # C water temperature
   Tw.1 <- 273.15 + Tw
   
-  ## bioreactor parameters
-  Vpw <- 25/1000000 #m3 porewater volume
-  Vw <- 100/1000000 #m3 water volume
-  Va <- 125/1000000 #m3 headspace volumne
-  Aaw <- 30 #cm2 for a ~3 cm radius air-water area
+  # Bioreactor parameters
+  Vpw <- 25/1000000 # m3 porewater volume
+  Vw <- 100/1000000 # m3 water volume
+  Va <- 125/1000000 # m3 headspace volumne
+  Aaw <- 30 # cm2 for a ~3 cm radius air-water area
   
-  #congener-specific constants
+  # Congener-specific constants
   Ka.w <-  0.0130452 # PCB52 dimensionless Henry's law constant @ 25 C
   dUow <- 55517.96 # internal energy for the transfer of octanol-water for PCB 52 (J/mol)
   logKoa <-  8.351339075 # PCB52 octanol-air equilibrium partition coefficient
   logKow <- 5.84 # PCB52 octanol-water equilibrium partition coefficient
   MW.pcb <- 291.976 # g/mol PCB 52 molecular weight
   
-  #PUF constants 
+  # PUF constants 
   Vpuf <- 0.000029 # m3 volume of PUF
   Kpuf <- 10^(0.6366*logKoa-3.1774)# m3/g PCB 52-PUF equilibrium partition coefficient
-  d <- 0.0213*100^3 #g/m3 density of PUF
-  ro <- 0.0045 #m3/d sampling rate
+  d <- 0.0213*100^3 # g/m3 density of PUF
+  ro <- 0.0045 # m3/d sampling rate
   
-  #SPME fiber constants
-  Af <- 0.138 #cm2 SPME area
-  Vf <- 0.000000069 #l/cm SPME volume/area
-  L <- 20 #cm SPME length
+  # SPME fiber constants
+  Af <- 0.138 # cm2 SPME area
+  Vf <- 0.000000069 # l/cm SPME volume/area
+  L <- 20 # cm SPME length
   Kf <- 10^(1.06*logKow-1.16) # PCB 52-SPME equilibrium partition coefficient
-  ko <- 70 #cm/d PCB 52 mass transfer coefficient to SPME
+  ko <- 70 # cm/d PCB 52 mass transfer coefficient to SPME
   
-  #partitioning constants
-  M <- 0.1 #kg/L solid-water ratio
+  # Partitioning constants
   foc <- 0.03 # organic carbon % in particles
-  K <- foc*(10^(0.94*logKow+0.42)) #L/kg sediment-water equilibrium partition coefficient
+  K <- foc*(10^(0.94*logKow + 0.42)) # L/kg sediment-water equilibrium partition coefficient
   D.water.air <- 0.2743615 # cm2/s water's diffusion coefficient in the gas phase @ Tair = 25 C, patm = 1013.25 mbars 
   D.co2.w <- 1.67606E-05 # cm2/s CO2's diffusion coefficient in water @ Tair = 25 C, patm = 1013.25 mbars 
   D.pcb.air <- D.water.air*(MW.pcb/MH2O)^(-0.5) # cm2/s PCB 52's diffusion coefficient in the gas phase 
@@ -80,18 +79,14 @@ rtm.PCB52 = function(t, c, parms){
   
   # iv) kaw
   kaw <- (1/(Kaw.a*Ka.w.t) + (1/Kaw.w))^-1 # m/s overall air-water mass transfer coefficient for PCB 52
-  kaw <- kaw*100*60*60*24 #cm/d overall air-water mass transfer coefficient for PCB 52
+  kaw <- kaw*100*60*60*24 # cm/d overall air-water mass transfer coefficient for PCB 52
   
   # biotransformation rate
-  kb <- 0 #1/d, value changes depending on experiment, i.e., control = 0, treatments LB400 = 0.130728499, LB400+Sap = 0.13325936
-  
-  # flux constant passed through a list called parms
-  ka <- parms$ka #1/d
-  kd <- parms$kd #1/d
-  
+  kb <- 0 # 1/d, value changes depending on experiment, i.e., control = 0, treatments LB400 = 0.130728499, LB400+Sap = 0.13325936
+
   # derivatives dx/dt are computed below
   r <- rep(0,length(c))
-  #r[1] <- c["Ca"]*Aaw*kaw/(Ka.w.t*Vw*10^6) + c["Cw"]*(kd*M*K*Vpw/Vw - ka - Aaw*kaw/(Vw*10^6)) -kb*c["Cw"] #dCwdt
+  r[1] <- Aaw*kaw/(Vw*10^6)*(c["Ca"]/(Ka.w.t) - c["Cw"]) - kb*c["Cw"] + d/layer*(Cpw - c["Cw"]) # dCwdt
   r[2] <- ko*Af*c["Cw"]/1000/L - ko*Af*c["mf"]/(Vf*L*Kf*1000) # dmfdt
   r[3] <- c["Cw"]*(kaw*Aaw/Va)/10^6 - c["Ca"]*(kaw*Aaw/Ka.w.t/Va)/10^6 # dCadt
   r[4] <- ro*c["Ca"]*1000 - ro*(c["mpuf"]/(Vpuf*d))/(Kpuf) # dmpufdt
@@ -101,19 +96,17 @@ rtm.PCB52 = function(t, c, parms){
   return(list(r))
 }
 
-#Predicted initial PCB 52 concentration for a given parameter set
-# Estimating Cwi (initial PCB 52 concentration in the water)
-Ct <- 321.4900673 #ng/g PCB 52 sediment concentration
+# Predicted initial PCB 52 concentration for a given parameter set
+# Estimating Cpw (PCB 52 concentration in sediment porewater)
+Ct <- 321.4900673 # ng/g PCB 52 sediment concentration
 logKow <- 5.84 # PCB52 octanol-water equilibrium partition coefficient
-foc <- 0.03 # organic carbon % in particles
-K <- foc*(10^(0.94*logKow+0.42)) #L/kg PCB 52 sediment-water equilibrium partition coefficient
-ds <- 900 #g/L density
-M <- 0.1 #kg/L solid-water ratio
-Cwi <- Ct*ds/(1+M*K)
-cinit <- c(Cw = Cwi, mf = 0, Ca = 0, mpuf = 0)
+foc <- 0.03 # organic carbon % in sediment
+K <- foc*(10^(0.94*logKow+0.42)) # L/kg PCB 52 sediment-water equilibrium partition coefficient
+Cpw <- Ct/K*1000
+cinit <- c(Cw = 0, mf = 0, Ca = 0, mpuf = 0)
 t <- pcb.52$time
 # Placeholder values of key parameters
-parms <- list(ka = 0.089, kd = 0.000036) #Input reasonable estimate of ka and kd (placeholder values)
+parms <- list(ka = 0.089, kd = 0.000036) # Input reasonable estimate of ka and kd (placeholder values)
 out1 <- ode(y = cinit, times = t, func = rtm.PCB52, parms = parms)
 head(out1)
 
