@@ -2,18 +2,20 @@
 
 
 # Install packages
+install.packages("readxl")
 install.packages("ggplot2")
 install.packages("deSolve")
 install.packages("minpack.lm")
 
 # Load libraries
+library(readxl) # read data from excel
 library(ggplot2) # plotting
 library(deSolve) # solving differential equations
 library(minpack.lm) # least squares fit using levenberg-marquart algorithm
 
 # Read data.xlsx
 # Mean values
-pcb.52 <- read_excel("dataV03.xlsx", sheet = "pcb52",
+pcb.52 <- read_excel("PCBData.xlsx", sheet = "pcb52",
                      col_names = TRUE, col_types = NULL)
 
 # Reactive transport function ---------------------------------------------
@@ -30,10 +32,10 @@ rtm.PCB52 = function(t, c, parms){
   Tw.1 <- 273.15 + Tw
   
   # Bioreactor parameters
-  Vpw <- 25/1000000 # m3 porewater volume
   Vw <- 100/1000000 # m3 water volume
   Va <- 125/1000000 # m3 headspace volumne
-  Aaw <- 30 # cm2 for a ~3 cm radius air-water area
+  Aaw <- 20 # cm2 
+  Aws <- 30 # cm2
   
   # Congener-specific constants
   Ka.w <-  0.0130452 # PCB52 dimensionless Henry's law constant @ 25 C
@@ -46,7 +48,7 @@ rtm.PCB52 = function(t, c, parms){
   Vpuf <- 0.000029 # m3 volume of PUF
   Kpuf <- 10^(0.6366*logKoa-3.1774)# m3/g PCB 52-PUF equilibrium partition coefficient
   d <- 0.0213*100^3 # g/m3 density of PUF
-  ro <- 0.0045 # m3/d sampling rate
+  ro <- 0.0005 # m3/d sampling rate
   
   # SPME fiber constants
   Af <- 0.138 # cm2 SPME area
@@ -55,75 +57,79 @@ rtm.PCB52 = function(t, c, parms){
   Kf <- 10^(1.06*logKow-1.16) # PCB 52-SPME equilibrium partition coefficient
   ko <- 70 # cm/d PCB 52 mass transfer coefficient to SPME
   
-  # Partitioning constants
-  foc <- 0.03 # organic carbon % in particles
-  K <- foc*(10^(0.94*logKow + 0.42)) # L/kg sediment-water equilibrium partition coefficient
+  # Air & water physical conditions
   D.water.air <- 0.2743615 # cm2/s water's diffusion coefficient in the gas phase @ Tair = 25 C, patm = 1013.25 mbars 
   D.co2.w <- 1.67606E-05 # cm2/s CO2's diffusion coefficient in water @ Tair = 25 C, patm = 1013.25 mbars 
   D.pcb.air <- D.water.air*(MW.pcb/MH2O)^(-0.5) # cm2/s PCB 52's diffusion coefficient in the gas phase 
   D.pcb.water <- D.co2.w*(MW.pcb/Mco2)^(-0.5) # cm2/s PCB 52's diffusion coefficient in water @ Tair = 25 C, patm = 1013.25 mbars
   v.H2O <- 0.010072884	# cm2/s kinematic viscosity of water @ Tair = 25
-  V.water.air <- 0.003 # m/s water's velocity of air-side mass transfer without ventilation
-  V.co2.w <- 0.041 # m/s mass transfer coefficient of CO2 in water side without ventilation
+  V.water.air <- 0.001 # m/s water's velocity of air-side mass transfer without ventilation (eq. 20-15)
+  V.co2.w <- 9*10^-6 # m/s mass transfer coefficient of CO2 in water side without ventilation
   SC.pcb.w <- v.H2O/D.pcb.water # Schmidt number PCB 52
+  bl <- 0.2 # cm boundary layer thickness
   
-  # kaw calculations
-  # i) Ka.w.t
-  Ka.w.t <- Ka.w*exp(-dUow/R*(1/Tw.1-1/Tst.1))*Tst.1/Tw.1 # Ka.w corrected by water and air temps during experiment
-  
-  # ii) Kaw.a
-  Kaw.a <- (D.pcb.air/D.water.air)^(0.67)*V.water.air # m/s air-side mass transfer coefficient
-  
-  # iii) Kaw.w
-  Kaw.w <- V.co2.w*(SC.pcb.w/600)^(-0.5) # m/s water-side mass transfer coefficient for PCB 52. 600 is the Schmidt number of CO2 at 298 K
-  
-  # iv) kaw
-  kaw <- (1/(Kaw.a*Ka.w.t) + (1/Kaw.w))^-1 # m/s overall air-water mass transfer coefficient for PCB 52
-  kaw <- kaw*100*60*60*24 # cm/d overall air-water mass transfer coefficient for PCB 52
-  
-  # biotransformation rate
+  # kaw calculations (air-water mass transfer coefficient)
+  # i) Ka.w.t, ka.w corrected by water and air temps during experiment
+  Ka.w.t <- Ka.w*exp(-dUow/R*(1/Tw.1-1/Tst.1))*Tst.1/Tw.1
+  # ii) Kaw.a, air-side mass transfer coefficient
+  Kaw.a <- V.water.air*(D.pcb.air/D.water.air)^(0.67) # [m/s]
+  # iii) Kaw.w, water-side mass transfer coefficient for PCB 52. 600 is the Schmidt number of CO2 at 298 K
+  Kaw.w <- V.co2.w*(SC.pcb.w/600)^(-0.5) # [m/s] 
+  # iv) kaw, overall air-water mass transfer coefficient for PCB 52
+  kaw.o <- (1/(Kaw.a*Ka.w.t) + (1/Kaw.w))^-1 # [m/s]
+  # v) kaw, overall air-water mass transfer coefficient for PCB 52, units change
+  kaw.o <- kaw.o*100*60*60*24 # [cm/d]
+
+  # Biotransformation rate
   kb <- 0 # 1/d, value changes depending on experiment, i.e., control = 0, treatments LB400 = 0.130728499, LB400+Sap = 0.13325936
 
   # derivatives dx/dt are computed below
   r <- rep(0,length(c))
-  r[1] <- Aaw*kaw/(Vw*10^6)*(c["Ca"]/(Ka.w.t) - c["Cw"]) - kb*c["Cw"] + d/layer*(Cpw - c["Cw"]) # dCwdt
-  r[2] <- ko*Af*c["Cw"]/1000/L - ko*Af*c["mf"]/(Vf*L*Kf*1000) # dmfdt
-  r[3] <- c["Cw"]*(kaw*Aaw/Va)/10^6 - c["Ca"]*(kaw*Aaw/Ka.w.t/Va)/10^6 # dCadt
-  r[4] <- ro*c["Ca"]*1000 - ro*(c["mpuf"]/(Vpuf*d))/(Kpuf) # dmpufdt
+  # dCwdt:
+  r[1] <- kaw.o*Aaw/(Vw*10^6)*(c["Ca"]/(Ka.w.t) - c["Cw"]) - kb*c["Cw"] + D.pcb.water*Aws*0.0864/(bl*Vw)*(Cpw - c["Cw"]) # 864 to change second to days and um to m
+  # dmfdt:
+  r[2] <- ko*Af*c["Cw"]/1000/L - ko*Af*c["mf"]/(Vf*L*Kf*1000) # Cw = [ng/L], mf = [ng/cm]
+  # dCadt:
+  r[3] <- c["Cw"]*(kaw.o*Aaw/Va)/10^6 - c["Ca"]*(kaw.o*Aaw/Ka.w.t/Va)/10^6
+  # dmpufdt:
+  r[4] <- ro*c["Ca"]*1000 - ro*(c["mpuf"]/(Vpuf*d))/(Kpuf) #  Ca = [ng/L], mpuf = [ng]
   
-  # the computed derivatives are returned as a list
+  # The computed derivatives are returned as a list
   # order of derivatives needs to be the same as the order of species in c
   return(list(r))
 }
 
-# Predicted initial PCB 52 concentration for a given parameter set
 # Estimating Cpw (PCB 52 concentration in sediment porewater)
 Ct <- 321.4900673 # ng/g PCB 52 sediment concentration
 logKow <- 5.84 # PCB52 octanol-water equilibrium partition coefficient
 foc <- 0.03 # organic carbon % in sediment
-K <- foc*(10^(0.94*logKow+0.42)) # L/kg PCB 52 sediment-water equilibrium partition coefficient
-Cpw <- Ct/K*1000
+K <- foc*(10^(0.94*logKow + 0.42)) # L/kg sediment-water equilibrium partition coefficient
+Cpw <- Ct/K*1000 # [ng/L]
 cinit <- c(Cw = 0, mf = 0, Ca = 0, mpuf = 0)
-t <- pcb.52$time
+t.1 <- pcb.52$time
+t.2 <- seq(0, 200, 5)
 # Placeholder values of key parameters
-parms <- list(ka = 0.089, kd = 0.000036) # Input reasonable estimate of ka and kd (placeholder values)
-out1 <- ode(y = cinit, times = t, func = rtm.PCB52, parms = parms)
-head(out1)
+#parms <- list(ko = 70, ro = 0.0005) # Input reasonable estimate of ka and kd (placeholder values)
+out.1 <- ode(y = cinit, times = t.1, func = rtm.PCB52, parms = NULL)
+out.2 <- ode(y = cinit, times = t.2, func = rtm.PCB52, parms = NULL)
+head(out.1)
+
+plot(out.2[,1], out.2[,4])
 
 #Sums of squares function for parameter fitting 
 ssq = function(parms){
   
   # initial concentration
-  cinit <- c(Cw = Cwi, mf = 0, Ca = 0, mpuf = 0)
+  cinit <- c(Cw = 0, mf = 0, Ca = 0, mpuf = 0)
   
   # time points for which values of mf and mpuf are reported
   # include the points where data are available
-  t <- c(seq(0, 35, 1), pcb.52$time)
+  t <- c(seq(0, 75, 1), pcb.52$time)
   t <- sort(unique(t))
   
   # parameters from the parameter estimation routine. Values are forced to be positive to avoid errors in the solution
-  ka <- sqrt((parms[1])^2) #1/d
-  kd <- sqrt((parms[2])^2) #1/d
+  ko <- sqrt((parms[1])^2) #1/d
+  ro <- sqrt((parms[2])^2) #1/d
   
   # solve ODE for a given set of parameters
   out2 <- ode(y = cinit, times = t, func = rtm.PCB52,
