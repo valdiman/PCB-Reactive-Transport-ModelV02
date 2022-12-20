@@ -1,22 +1,73 @@
 
 
 
+# Packages and libraries --------------------------------------------------
 # Install packages
 install.packages("readxl")
+install.packages("dplyr")
+install.packages("reshape2")
 install.packages("ggplot2")
 install.packages("deSolve")
 install.packages("minpack.lm")
 
 # Load libraries
 library(readxl) # read data from excel
+library(dplyr) # organize data
+library(reshape2) # organize data
 library(ggplot2) # plotting
 library(deSolve) # solving differential equations
 library(minpack.lm) # least squares fit using levenberg-marquart algorithm
 
-# Read data.xlsx
+# Read data ---------------------------------------------------------------
 # Mean values
-pcb.52 <- read_excel("PCBData.xlsx", sheet = "pcb52",
-                     col_names = TRUE, col_types = NULL)
+exp.data <- data.frame(read_excel("PCBDataV02.xlsx", sheet = "Sheet1",
+                     col_names = TRUE, col_types = NULL))
+
+# Organize data -----------------------------------------------------------
+# Change format of mass and length to numeric
+exp.data$mass <- as.numeric(exp.data$mass)
+exp.data$length <- as.numeric(exp.data$length)
+
+# Pull congener-specific data from the dataset & calculate mean
+# values for each sampler-treatment combination at each time point
+# Select PCBi
+exp.PCBi <- exp.data[, c('time', 'treatment', 'sampler', 'mass',
+                          'length', 'PCB52')]
+colnames(exp.PCBi)[6] <- "PCBi"
+
+exp.PCBi.mspme <- exp.PCBi[exp.PCBi$sampler == 'SPME', ]
+exp.PCBi.mspme.ctrl <- exp.PCBi.mspme[exp.PCBi.mspme$treatment == 'Ctrl', ]
+exp.PCBi.mspme.lb400 <- exp.PCBi.mspme[exp.PCBi.mspme$treatment == 'LB400', ]
+exp.PCBi.mspme.ctrl.ave <- aggregate(PCBi/length ~ time,
+                                      data = exp.PCBi.mspme.ctrl,
+                                      FUN = mean, na.rm = TRUE)
+exp.PCBi.mspme.lb400.ave <- aggregate(PCBi/length ~ time,
+                                      data = exp.PCBi.mspme.lb400,
+                                      FUN = mean, na.rm = TRUE)
+
+exp.PCBi.mpuf <- exp.PCBi[exp.PCBi$sampler == 'PUF', ]
+exp.PCBi.mpuf.ctrl <- exp.PCBi.mpuf[exp.PCBi.mpuf$treatment == 'Ctrl', ]
+exp.PCBi.mpuf.lb400 <- exp.PCBi.mpuf[exp.PCBi.mpuf$treatment == 'LB400', ]
+exp.PCBi.mpuf.ctrl.ave <- aggregate(PCBi ~ time,
+                                      data = exp.PCBi.mpuf.ctrl,
+                                      FUN = mean, na.rm = TRUE)
+exp.PCBi.mpuf.lb400.ave <- aggregate(PCBi ~ time,
+                                       data = exp.PCBi.mpuf.lb400,
+                                       FUN = mean, na.rm = TRUE)
+
+pcb.52 <- cbind(exp.PCBi.mspme.ctrl.ave$time, exp.PCBi.mspme.ctrl.ave$`PCBi/length`,
+               exp.PCBi.mpuf.ctrl.ave$PCBi, exp.PCBi.mspme.lb400.ave$`PCBi/length`,
+               exp.PCBi.mpuf.ctrl.ave$PCBi)
+
+t.0 <- c(0, 0, 0, 0, 0)
+pcb.52 <- rbind(t.0, pcb.52)
+pcb.52[, 1] <- c(0, 16, 35, 75)
+colnames(pcb.52) <- c("time", "PCB 52 mass in SPME (ng/cm); Control",
+                      "PCB 52 mass in PUF (ng); Control",
+                      "PCB 52 mass in SPME (ng/cm); LB400",
+                      "PCB 52 mass in PUF (ng); LB400")
+rownames(pcb.52) <- NULL
+pcb.52 <- data.frame(pcb.52)
 
 # Reactive transport function ---------------------------------------------
 
@@ -48,14 +99,14 @@ rtm.PCB52 = function(t, c, parms){
   Vpuf <- 0.000029 # m3 volume of PUF
   Kpuf <- 10^(0.6366*logKoa-3.1774)# m3/g PCB 52-PUF equilibrium partition coefficient
   d <- 0.0213*100^3 # g/m3 density of PUF
-  ro <- 0.0005 # m3/d sampling rate
+  # ro <- 0.0005 # m3/d sampling rate
   
   # SPME fiber constants
   Af <- 0.138 # cm2 SPME area
   Vf <- 0.000000069 # l/cm SPME volume/area
   L <- 20 # cm SPME length
   Kf <- 10^(1.06*logKow-1.16) # PCB 52-SPME equilibrium partition coefficient
-  ko <- 70 # cm/d PCB 52 mass transfer coefficient to SPME
+  # ko <- 70 # cm/d PCB 52 mass transfer coefficient to SPME
   
   # Air & water physical conditions
   D.water.air <- 0.2743615 # cm2/s water's diffusion coefficient in the gas phase @ Tair = 25 C, patm = 1013.25 mbars 
@@ -83,6 +134,10 @@ rtm.PCB52 = function(t, c, parms){
   # Biotransformation rate
   kb <- 0 # 1/d, value changes depending on experiment, i.e., control = 0, treatments LB400 = 0.130728499, LB400+Sap = 0.13325936
 
+  # flux constant passed through a list called parms
+  ro <- parms$ro # m3/d
+  ko <- parms$ko # cm/d 
+  
   # derivatives dx/dt are computed below
   r <- rep(0,length(c))
   # dCwdt:
@@ -109,12 +164,12 @@ cinit <- c(Cw = 0, mf = 0, Ca = 0, mpuf = 0)
 t.1 <- pcb.52$time
 t.2 <- seq(0, 200, 5)
 # Placeholder values of key parameters
-#parms <- list(ko = 70, ro = 0.0005) # Input reasonable estimate of ka and kd (placeholder values)
-out.1 <- ode(y = cinit, times = t.1, func = rtm.PCB52, parms = NULL)
-out.2 <- ode(y = cinit, times = t.2, func = rtm.PCB52, parms = NULL)
+parms <- list(ro = 0.0005, ko = 70) # Input reasonable estimate of ko and ro (placeholder values)
+out.1 <- ode(y = cinit, times = t.1, func = rtm.PCB52, parms = parms)
+out.2 <- ode(y = cinit, times = t.2, func = rtm.PCB52, parms = parms)
 head(out.1)
 
-plot(out.2[,1], out.2[,4])
+plot(out.2[,1], out.2[,5])
 
 #Sums of squares function for parameter fitting 
 ssq = function(parms){
@@ -122,22 +177,22 @@ ssq = function(parms){
   # initial concentration
   cinit <- c(Cw = 0, mf = 0, Ca = 0, mpuf = 0)
   
-  # time points for which values of mf and mpuf are reported
+  # Time points for which values of mf and mpuf are reported
   # include the points where data are available
   t <- c(seq(0, 75, 1), pcb.52$time)
   t <- sort(unique(t))
   
-  # parameters from the parameter estimation routine. Values are forced to be positive to avoid errors in the solution
-  ko <- sqrt((parms[1])^2) #1/d
+  # Parameters from the parameter estimation routine. Values are forced to be positive to avoid errors in the solution
   ro <- sqrt((parms[2])^2) #1/d
+  ko <- sqrt((parms[1])^2) #1/d
   
-  # solve ODE for a given set of parameters
+  # Solve ODE for a given set of parameters
   out2 <- ode(y = cinit, times = t, func = rtm.PCB52,
-              parms = list(ka = sqrt((ka)^2), kd = sqrt((kd)^2)))
+              parms = list(ko = sqrt((ko)^2), ko = sqrt((ko)^2)))
   
   # Filter data that contains time points where data are available
   out2.pcb.52 <- data.frame(out2)
-  out2.pcb.52 <- out2.pcb.52[out2.pcb.52$time %in% pcb.52$time,]
+  out2.pcb.52 <- out2.pcb.52[out2.pcb.52$time %in% pcb.52$time, ]
   
   # Evaluate predicted vs experimental residual
   out2.pcb.52 <- subset(out2.pcb.52, select = -c(Cw, Ca)) # only mass of fiber and puf
@@ -153,16 +208,16 @@ ssq = function(parms){
 }
 
 # parameter fitting using levenberg marquart algorithm
-parms <- c(ka = 14, kd = 0.0232) #Input second guess for parameters
+parms <- c(ro = 0.0005, ko = 70) # Input second guess for parameters
 # fitting
 fitval <- nls.lm(par = parms, fn = ssq)
 summary(fitval)
 # Estimated parameter
 parest <- as.list(coef(fitval))
-parms <- list(ka = parest$ka, kd = parest$kd)
+parms <- list(ro = parest$ro, ko = parest$ko)
 
 # simulated predicted profile at estimated parameter values
-cinit <- c(Cw = Cwi, mf = 0, Ca = 0, mpuf = 0)
+cinit <- c(Cw = 0, mf = 0, Ca = 0, mpuf = 0)
 t.2 <- c(seq(0, 40, 0.5))
 out3 <- ode(y = cinit, times = t.2, func = rtm.PCB52, parms = parest)
 out.plot <- data.frame(out3)
