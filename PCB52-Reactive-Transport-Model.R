@@ -226,28 +226,28 @@ names(out.plot) <- c("time", "PCB 52 predicted Cw", "PCB 52 predicted mass fiber
                      "PCB 52 predicted Ca", "PCB 52 predicted mass PUF")
 # Predicted
 # spme
-out.plot.mf <- subset(out.plot,
+out.plot.mspme <- subset(out.plot,
                       select = c(time, `PCB 52 predicted mass fiber`))
 # puf
 out.plot.mpuf <- subset(out.plot,
                         select = c(time, `PCB 52 predicted mass PUF`))
-pred.mf <- melt(out.plot.mf, id.var = c("time"),
+pred.mspme <- melt(out.plot.mspme, id.var = c("time"),
                 variable.name = "compartment", value.name = "mass")
 pred.mpuf <- melt(out.plot.mpuf, id.var = c("time"),
                   variable.name = "compartment", value.name = "mass")
 # Experimental
 # spme
-pcb.52.mf <- subset(pcb.52, select = c(time, `PCB 52 mass in SPME (ng/cm); Control`))
+pcb.52.mspme <- subset(pcb.52, select = c(time, `PCB 52 mass in SPME (ng/cm); Control`))
 # puf
 pcb.52.mpuf <- subset(pcb.52, select = c(time, `PCB 52 mass in PUF (ng); Control`))
-exp.mf <- melt(pcb.52.mf, id.var = c("time"), variable.name = "compartment",
+exp.mspme <- melt(pcb.52.mspme, id.var = c("time"), variable.name = "compartment",
                value.name = "mass")
 exp.mpuf <- melt(pcb.52.mpuf, id.var = c("time"), variable.name = "compartment",
                  value.name = "mass")  
-names(pcb.52.mf) <- c("time", "PCB 52 measured mass fiber")
+names(pcb.52.mspme) <- c("time", "PCB 52 measured mass fiber")
 names(pcb.52.mpuf) <- c("time", "PCB 52 measured mass PUF")
 
-mf <- ggplot(data = pred.mf, aes(x = time, y = mass)) +
+mspme <- ggplot(data = pred.mspme, aes(x = time, y = mass)) +
   geom_line(colour = 2) +
   geom_point(data = exp.mf, aes(x = time, y = mass), color = 2) +
   theme_bw() +
@@ -255,7 +255,7 @@ mf <- ggplot(data = pred.mf, aes(x = time, y = mass)) +
   ggtitle("Control - SPME Fiber Results for PCB 52") +
   xlab(expression(bold("Time (day)"))) +
   ylab(expression(bold("PCB 52 fiber mass accumulated  (ng/cm)"))) +
-  ylim(0, 0.15) +
+  ylim(0, 0.3) +
   xlim(0, 80)
 
 print(mf)
