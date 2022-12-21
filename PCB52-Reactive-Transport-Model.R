@@ -3,7 +3,6 @@
 
 # Packages and libraries --------------------------------------------------
 # Install packages
-install.packages("readxl")
 install.packages("dplyr")
 install.packages("reshape2")
 install.packages("ggplot2")
@@ -11,7 +10,6 @@ install.packages("deSolve")
 install.packages("minpack.lm")
 
 # Load libraries
-library(readxl) # read data from excel
 library(dplyr) # organize data
 library(reshape2) # organize data
 library(ggplot2) # plotting
@@ -127,12 +125,19 @@ rtm.PCB52 = function(t, c, parms){
   # v) kaw, overall air-water mass transfer coefficient for PCB 52, units change
   kaw.o <- kaw.o*100*60*60*24 # [cm/d]
 
+  # Estimating Cpw (PCB 52 concentration in sediment porewater)
+  Ct <- 321.4900673 # ng/g PCB 52 sediment concentration
+  logKow <- 5.84 # PCB52 octanol-water equilibrium partition coefficient
+  foc <- 0.03 # organic carbon % in sediment
+  K <- foc*(10^(0.94*logKow + 0.42)) # L/kg sediment-water equilibrium partition coefficient
+  Cpw <- Ct/K*1000 # [ng/L]
+  
   # Biotransformation rate
-  kb <- 0 # 1/d, value changes depending on experiment, i.e., control = 0, treatments LB400 = 0.130728499, LB400+Sap = 0.13325936
+  kb <- 0.130728499 # 1/d, value changes depending on experiment, i.e., control = 0, treatments LB400 = 0.130728499
 
   # flux constant passed through a list called parms
   ro <- parms$ro # m3/d
-  ko <- parms$ko # cm/d 
+  ko <- parms$ko # cm/d
   
   # derivatives dx/dt are computed below
   r <- rep(0,length(c))
@@ -150,61 +155,57 @@ rtm.PCB52 = function(t, c, parms){
   return(list(r))
 }
 
-# Estimating Cpw (PCB 52 concentration in sediment porewater)
-Ct <- 321.4900673 # ng/g PCB 52 sediment concentration
-logKow <- 5.84 # PCB52 octanol-water equilibrium partition coefficient
-foc <- 0.03 # organic carbon % in sediment
-K <- foc*(10^(0.94*logKow + 0.42)) # L/kg sediment-water equilibrium partition coefficient
-Cpw <- Ct/K*1000 # [ng/L]
+# Initial conditions and run function
 cinit <- c(Cw = 0, mf = 0, Ca = 0, mpuf = 0)
 t.1 <- pcb.52$time
-t.2 <- seq(0, 200, 5)
 # Placeholder values of key parameters
-parms <- list(ro = 0.0005, ko = 70) # Input reasonable estimate of ko and ro (placeholder values)
+parms <- list(ro = 0.0043, ko = 70) # Input reasonable estimate of ko and ro (placeholder values)
 out.1 <- ode(y = cinit, times = t.1, func = rtm.PCB52, parms = parms)
-out.2 <- ode(y = cinit, times = t.2, func = rtm.PCB52, parms = parms)
 head(out.1)
 
-plot(out.2[,1], out.2[,5])
-
-#Sums of squares function for parameter fitting 
+# Fitting function --------------------------------------------------------
+# Sums of squares function for parameter fitting 
 ssq = function(parms){
   
   # initial concentration
   cinit <- c(Cw = 0, mf = 0, Ca = 0, mpuf = 0)
   
   # Time points for which values of mf and mpuf are reported
-  # include the points where data are available
+  # Include the points where data are available
   t <- c(seq(0, 75, 1), pcb.52$time)
   t <- sort(unique(t))
   
-  # Parameters from the parameter estimation routine. Values are forced to be positive to avoid errors in the solution
-  ro <- sqrt((parms[2])^2) #1/d
-  ko <- sqrt((parms[1])^2) #1/d
+  # Parameters from the parameter estimation routine.
+  # Values are forced to be positive to avoid errors in the solution
+  ro <- sqrt((parms[1])^2) #
+  ko <- sqrt((parms[2])^2) # 
   
   # Solve ODE for a given set of parameters
   out2 <- ode(y = cinit, times = t, func = rtm.PCB52,
-              parms = list(ko = sqrt((ko)^2), ko = sqrt((ko)^2)))
+              parms = list(ro = sqrt((ro)^2), ko = sqrt((ko)^2)))
   
   # Filter data that contains time points where data are available
   out2.pcb.52 <- data.frame(out2)
   out2.pcb.52 <- out2.pcb.52[out2.pcb.52$time %in% pcb.52$time, ]
   
   # Evaluate predicted vs experimental residual
-  out2.pcb.52 <- subset(out2.pcb.52, select = -c(Cw, Ca)) # only mass of fiber and puf
+  # spme and puf only 
+  out2.pcb.52 <- subset(out2.pcb.52, select = -c(Cw, Ca))
   pred.pcb.52 <- melt(out2.pcb.52, id.var = "time", variable.name = "sampler",
                       value.name = "mass")
-  pcb.52.2 <- subset(pcb.52, select = c(time, `PCB 52 mass in SPME (ng/cm); Control`, `PCB 52 mass in PUF (ng); Control`)) # only mass of fiber and puf
+  # spme and puf only
+  pcb.52.2 <- subset(pcb.52, select = c(time, `PCB 52 mass in SPME (ng/cm); Control`,
+                                        `PCB 52 mass in PUF (ng); Control`))
   exp.pcb.52 <- melt(pcb.52.2,id.var = "time", variable.name = "sampler",
                      value.name = "mass")
-  ssqres <- pred.pcb.52$mass-exp.pcb.52$mass
+  ssqres <- pred.pcb.52$mass - exp.pcb.52$mass
   
   # return predicted vs experimental residual
   return(ssqres)
 }
 
 # parameter fitting using levenberg marquart algorithm
-parms <- c(ro = 0.0005, ko = 70) # Input second guess for parameters
+parms <- c(ro = 0.001, ko = 25) # Input second guess for parameters
 # fitting
 fitval <- nls.lm(par = parms, fn = ssq)
 summary(fitval)
@@ -212,27 +213,33 @@ summary(fitval)
 parest <- as.list(coef(fitval))
 parms <- list(ro = parest$ro, ko = parest$ko)
 
-# simulated predicted profile at estimated parameter values
+# Simulated predicted profile at estimated parameter values
 cinit <- c(Cw = 0, mf = 0, Ca = 0, mpuf = 0)
-t.2 <- c(seq(0, 40, 0.5))
+t.2 <- c(seq(0, 75, 1))
 out3 <- ode(y = cinit, times = t.2, func = rtm.PCB52, parms = parest)
 out.plot <- data.frame(out3)
 
-# plot of predicted vs experimental data
-# Overlay predicted profile with experimental data
+# Plotting ----------------------------------------------------------------
+# (1) Plot of predicted vs experimental control data
 
 names(out.plot) <- c("time", "PCB 52 predicted Cw", "PCB 52 predicted mass fiber",
                      "PCB 52 predicted Ca", "PCB 52 predicted mass PUF")
+# Predicted
+# spme
 out.plot.mf <- subset(out.plot,
-                      select = c(time, `PCB 52 predicted mass fiber`)) # only mass of fiber
+                      select = c(time, `PCB 52 predicted mass fiber`))
+# puf
 out.plot.mpuf <- subset(out.plot,
-                        select = c(time, `PCB 52 predicted mass PUF`)) # only mass of puf
+                        select = c(time, `PCB 52 predicted mass PUF`))
 pred.mf <- melt(out.plot.mf, id.var = c("time"),
                 variable.name = "compartment", value.name = "mass")
 pred.mpuf <- melt(out.plot.mpuf, id.var = c("time"),
                   variable.name = "compartment", value.name = "mass")
-pcb.52.mf <- subset(pcb.52, select = c(time, `PCB 52 mass in SPME (ng/cm); Control`)) # only mass of fiber
-pcb.52.mpuf <- subset(pcb.52, select = c(time, `PCB 52 mass in PUF (ng); Control`)) # only mass of puf
+# Experimental
+# spme
+pcb.52.mf <- subset(pcb.52, select = c(time, `PCB 52 mass in SPME (ng/cm); Control`))
+# puf
+pcb.52.mpuf <- subset(pcb.52, select = c(time, `PCB 52 mass in PUF (ng); Control`))
 exp.mf <- melt(pcb.52.mf, id.var = c("time"), variable.name = "compartment",
                value.name = "mass")
 exp.mpuf <- melt(pcb.52.mpuf, id.var = c("time"), variable.name = "compartment",
@@ -248,8 +255,8 @@ mf <- ggplot(data = pred.mf, aes(x = time, y = mass)) +
   ggtitle("Control - SPME Fiber Results for PCB 52") +
   xlab(expression(bold("Time (day)"))) +
   ylab(expression(bold("PCB 52 fiber mass accumulated  (ng/cm)"))) +
-  ylim(0, 0.4) +
-  xlim(0, 40)
+  ylim(0, 0.15) +
+  xlim(0, 80)
 
 print(mf)
 
@@ -261,7 +268,7 @@ mpuf <- ggplot(data = pred.mpuf, aes(x = time, y = mass)) +
   ggtitle("Control - PUF Results for PCB 52") +
   xlab(expression(bold("Time (day)"))) +
   ylab(expression(bold("PCB 52 PUF mass accumulated (ng/PUF)"))) +
-  ylim(0, 80) +
-  xlim(0, 40)
+  ylim(0, 40) +
+  xlim(0, 80)
 
 print(mpuf)
