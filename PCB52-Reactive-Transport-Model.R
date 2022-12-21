@@ -133,7 +133,7 @@ rtm.PCB52 = function(t, c, parms){
   Cpw <- Ct/K*1000 # [ng/L]
   
   # Biotransformation rate
-  kb <- 0.130728499 # 1/d, value changes depending on experiment, i.e., control = 0, treatments LB400 = 0.130728499
+  kb <- 0 # 1/d, value changes depending on experiment, i.e., control = 0, treatments LB400 = 0.130728499
 
   # flux constant passed through a list called parms
   ro <- parms$ro # m3/d
