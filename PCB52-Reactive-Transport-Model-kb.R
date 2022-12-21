@@ -160,38 +160,38 @@ t.2 <- c(seq(0, 75, 1))
 parest <- as.list(coef(fitval))
 parms <- list(ro = parest$ro, ko = parest$ko)
 out.kb <- ode(y = cinit, times = t.2, func = rtm.PCB52, parms = parest)
-out.plot <- data.frame(out.kb)
+out.plot.kb <- data.frame(out.kb)
 
 # Plotting ----------------------------------------------------------------
 # Plot of predicted vs experimental LB400 data
-names(out.plot) <- c("time", "PCB 52 predicted Cw", "PCB 52 predicted mass fiber",
+names(out.plot.kb) <- c("time", "PCB 52 predicted Cw", "PCB 52 predicted mass fiber",
                      "PCB 52 predicted Ca", "PCB 52 predicted mass PUF")
 # Predicted
 # spme
-out.plot.mf <- subset(out.plot,
+out.plot.mspme <- subset(out.plot.kb,
                       select = c(time, `PCB 52 predicted mass fiber`))
 # puf
-out.plot.mpuf <- subset(out.plot,
+out.plot.mpuf <- subset(out.plot.kb,
                         select = c(time, `PCB 52 predicted mass PUF`))
-pred.mf <- melt(out.plot.mf, id.var = c("time"),
+pred.mspme.kb <- melt(out.plot.mspme, id.var = c("time"),
                 variable.name = "compartment", value.name = "mass")
-pred.mpuf <- melt(out.plot.mpuf, id.var = c("time"),
+pred.mpuf.kb <- melt(out.plot.mpuf, id.var = c("time"),
                   variable.name = "compartment", value.name = "mass")
 # Experimental
 # spme
-pcb.52.mf <- subset(pcb.52,
+pcb.52.mspme <- subset(pcb.52,
                     select = c(time,`PCB 52 mass in SPME (ng/cm); LB400`))
 # puf
 pcb.52.mpuf <- subset(pcb.52,
                       select = c(time, `PCB 52 mass in PUF (ng); LB400`))
-exp.mf <- melt(pcb.52.mf, id.var = c("time"), variable.name = "compartment",
+exp.mspme <- melt(pcb.52.mspme, id.var = c("time"), variable.name = "compartment",
                value.name = "mass")
 exp.mpuf <- melt(pcb.52.mpuf, id.var = c("time"), variable.name = "compartment",
                  value.name = "mass")  
-names(pcb.52.mf) <- c("time", "PCB 52 measured mass fiber")
+names(pcb.52.mspme) <- c("time", "PCB 52 measured mass fiber")
 names(pcb.52.mpuf) <- c("time", "PCB 52 measured mass PUF")
 
-mf <- ggplot(data = pred.mf, aes(x = time, y = mass)) +
+mspme.kb <- ggplot(data = pred.mspme.kb, aes(x = time, y = mass)) +
   geom_line(colour = 2) +
   geom_point(data = exp.mf, aes(x = time, y = mass), color = 2) +
   theme_bw() +
@@ -202,9 +202,9 @@ mf <- ggplot(data = pred.mf, aes(x = time, y = mass)) +
   ylim(0, 0.3) +
   xlim(0, 80)
 
-print(mf)
+print(mspme.kb)
 
-mpuf <- ggplot(data = pred.mpuf, aes(x = time, y = mass)) +
+mpuf.kb <- ggplot(data = pred.mpuf.kb, aes(x = time, y = mass)) +
   geom_line(colour = 4) +
   geom_point(data = exp.mpuf, aes(x = time, y = mass), color = 4) +
   theme_bw() +
@@ -215,4 +215,4 @@ mpuf <- ggplot(data = pred.mpuf, aes(x = time, y = mass)) +
   ylim(0, 40) +
   xlim(0, 80)
 
-print(mpuf)
+print(mpuf.kb)
