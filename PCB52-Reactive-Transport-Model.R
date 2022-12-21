@@ -19,55 +19,51 @@ library(deSolve) # solving differential equations
 library(minpack.lm) # least squares fit using levenberg-marquart algorithm
 
 # Read data ---------------------------------------------------------------
-# Mean values
-exp.data <- data.frame(read_excel("PCBDataV02.xlsx", sheet = "Sheet1",
-                     col_names = TRUE, col_types = NULL))
+exp.data.0 <- read.csv("PCBDataV02.csv")
 
 # Organize data -----------------------------------------------------------
-# Change format of mass and length to numeric
-exp.data$mass <- as.numeric(exp.data$mass)
-exp.data$length <- as.numeric(exp.data$length)
+# Remove lost sample(s), NA
+exp.data <- exp.data.0[!is.na(exp.data.0$PCB52), ]
 
 # Pull congener-specific data from the dataset & calculate mean
 # values for each sampler-treatment combination at each time point
-# Select PCBi
-exp.PCBi <- exp.data[, c('time', 'treatment', 'sampler', 'mass',
-                          'length', 'PCB52')]
-colnames(exp.PCBi)[6] <- "PCBi"
+exp.mspme.control <- exp.data %>%
+  filter(treatment == "Ctrl" & sampler == "SPME") %>%
+  group_by(time) %>%
+  mutate(mean(PCB52/length)) %>%
+  distinct(`mean(PCB52/length)`) %>%
+  rename("PCB 52 mass in SPME (ng/cm); Control" = `mean(PCB52/length)`)
 
-exp.PCBi.mspme <- exp.PCBi[exp.PCBi$sampler == 'SPME', ]
-exp.PCBi.mspme.ctrl <- exp.PCBi.mspme[exp.PCBi.mspme$treatment == 'Ctrl', ]
-exp.PCBi.mspme.lb400 <- exp.PCBi.mspme[exp.PCBi.mspme$treatment == 'LB400', ]
-exp.PCBi.mspme.ctrl.ave <- aggregate(PCBi/length ~ time,
-                                      data = exp.PCBi.mspme.ctrl,
-                                      FUN = mean, na.rm = TRUE)
-exp.PCBi.mspme.lb400.ave <- aggregate(PCBi/length ~ time,
-                                      data = exp.PCBi.mspme.lb400,
-                                      FUN = mean, na.rm = TRUE)
+exp.mspme.LB400 <- exp.data %>%
+  filter(treatment == "LB400" & sampler == "SPME") %>%
+  group_by(time) %>%
+  mutate(mean(PCB52/length)) %>%
+  distinct(`mean(PCB52/length)`) %>%
+  rename("PCB 52 mass in SPME (ng/cm); LB400" = `mean(PCB52/length)`) 
 
-exp.PCBi.mpuf <- exp.PCBi[exp.PCBi$sampler == 'PUF', ]
-exp.PCBi.mpuf.ctrl <- exp.PCBi.mpuf[exp.PCBi.mpuf$treatment == 'Ctrl', ]
-exp.PCBi.mpuf.lb400 <- exp.PCBi.mpuf[exp.PCBi.mpuf$treatment == 'LB400', ]
-exp.PCBi.mpuf.ctrl.ave <- aggregate(PCBi ~ time,
-                                      data = exp.PCBi.mpuf.ctrl,
-                                      FUN = mean, na.rm = TRUE)
-exp.PCBi.mpuf.lb400.ave <- aggregate(PCBi ~ time,
-                                       data = exp.PCBi.mpuf.lb400,
-                                       FUN = mean, na.rm = TRUE)
+exp.mpuf.control <- exp.data %>%
+  filter(treatment == "Ctrl" & sampler == "PUF") %>%
+  group_by(time) %>%
+  mutate(mean(PCB52)) %>%
+  distinct(`mean(PCB52)`) %>%
+  rename("PCB 52 mass in PUF (ng); Control" = `mean(PCB52)`)
 
-pcb.52 <- cbind(exp.PCBi.mspme.ctrl.ave$time, exp.PCBi.mspme.ctrl.ave$`PCBi/length`,
-               exp.PCBi.mpuf.ctrl.ave$PCBi, exp.PCBi.mspme.lb400.ave$`PCBi/length`,
-               exp.PCBi.mpuf.ctrl.ave$PCBi)
+exp.mpuf.LB400 <- exp.data %>%
+  filter(treatment == "LB400" & sampler == "PUF") %>%
+  group_by(time) %>%
+  mutate(mean(PCB52)) %>%
+  distinct(`mean(PCB52)`) %>%
+  rename("PCB 52 mass in PUF (ng); LB400" = `mean(PCB52)`)
 
-t.0 <- c(0, 0, 0, 0, 0)
-pcb.52 <- rbind(t.0, pcb.52)
-pcb.52[, 1] <- c(0, 16, 35, 75)
-colnames(pcb.52) <- c("time", "PCB 52 mass in SPME (ng/cm); Control",
-                      "PCB 52 mass in PUF (ng); Control",
-                      "PCB 52 mass in SPME (ng/cm); LB400",
-                      "PCB 52 mass in PUF (ng); LB400")
-rownames(pcb.52) <- NULL
-pcb.52 <- data.frame(pcb.52)
+pcb.52 <- left_join(exp.mspme.control, exp.mpuf.control)  %>% 
+  left_join(exp.mspme.LB400) %>% 
+  left_join(exp.mpuf.LB400) %>% 
+  mutate(time = recode(time, `1` = 16, `2` = 35, `3` = 75)) %>%
+  ungroup() %>%
+  add_row(time = 0, "PCB 52 mass in SPME (ng/cm); Control" = 0,
+          "PCB 52 mass in PUF (ng); Control" = 0, 
+          "PCB 52 mass in SPME (ng/cm); LB400" = 0,
+          "PCB 52 mass in PUF (ng); LB400" = 0, .before = 1)
 
 # Reactive transport function ---------------------------------------------
 
