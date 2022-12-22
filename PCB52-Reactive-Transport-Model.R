@@ -23,6 +23,9 @@ exp.data.0 <- read.csv("PCBDataV02.csv")
 # Remove lost sample(s), NA
 exp.data <- exp.data.0[!is.na(exp.data.0$PCB52), ]
 
+# spme = SPME fiber sampler
+# puf = PUF sampler
+
 # Pull congener-specific data from the dataset & calculate mean
 # values for each sampler-treatment combination at each time point
 exp.mspme.control <- exp.data %>%
@@ -73,7 +76,7 @@ rtm.PCB52 = function(t, c, parms){
   Mco2 <- 44.0094 # g/mol CO2 molecular weight
   Tst <- 25 # C air temperature
   Tst.1 <- 273.15 + Tst # air and standard temperature in K, 25 C
-  Tw <- 20 # C water temperature
+  Tw <- 13 # C water temperature
   Tw.1 <- 273.15 + Tw
   
   # Bioreactor parameters
@@ -91,15 +94,15 @@ rtm.PCB52 = function(t, c, parms){
   
   # PUF constants 
   Vpuf <- 0.000029 # m3 volume of PUF
-  Kpuf <- 10^(0.6366*logKoa-3.1774)# m3/g PCB 52-PUF equilibrium partition coefficient
+  Kpuf <- 10^(0.6366*logKoa - 3.1774)# m3/g PCB 52-PUF equilibrium partition coefficient
   d <- 0.0213*100^3 # g/m3 density of PUF
   # ro <- 0.0005 # m3/d sampling rate
   
   # SPME fiber constants
   Af <- 0.138 # cm2 SPME area
-  Vf <- 0.000000069 # l/cm SPME volume/area
-  L <- 20 # cm SPME length
-  Kf <- 10^(1.06*logKow-1.16) # PCB 52-SPME equilibrium partition coefficient
+  Vf <- 0.000000069 # L/cm SPME volume/area
+  L <- 30 # cm SPME length average
+  Kf <- 10^(1.06*logKow - 1.16) # PCB 52-SPME equilibrium partition coefficient
   # ko <- 70 # cm/d PCB 52 mass transfer coefficient to SPME
   
   # Air & water physical conditions
@@ -205,7 +208,7 @@ ssq = function(parms){
 }
 
 # parameter fitting using levenberg marquart algorithm
-parms <- c(ro = 0.001, ko = 25) # Input second guess for parameters
+parms <- c(ro = 0.0075, ko = 20) # Input second guess for parameters
 # fitting
 fitval <- nls.lm(par = parms, fn = ssq)
 summary(fitval)
@@ -249,16 +252,16 @@ names(pcb.52.mpuf) <- c("time", "PCB 52 measured mass PUF")
 
 mspme <- ggplot(data = pred.mspme, aes(x = time, y = mass)) +
   geom_line(colour = 2) +
-  geom_point(data = exp.mf, aes(x = time, y = mass), color = 2) +
+  geom_point(data = exp.mspme, aes(x = time, y = mass), color = 2) +
   theme_bw() +
   theme(aspect.ratio = 6/10) +
   ggtitle("Control - SPME Fiber Results for PCB 52") +
   xlab(expression(bold("Time (day)"))) +
   ylab(expression(bold("PCB 52 fiber mass accumulated  (ng/cm)"))) +
-  ylim(0, 0.3) +
+  ylim(0, 0.25) +
   xlim(0, 80)
 
-print(mf)
+print(mspme)
 
 mpuf <- ggplot(data = pred.mpuf, aes(x = time, y = mass)) +
   geom_line(colour = 4) +
