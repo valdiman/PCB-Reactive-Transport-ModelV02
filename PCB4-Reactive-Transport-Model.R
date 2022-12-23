@@ -31,30 +31,30 @@ exp.data <- exp.data.0[!is.na(exp.data.0$PCB4), ]
 exp.mspme.control <- exp.data %>%
   filter(treatment == "Ctrl" & sampler == "SPME") %>%
   group_by(time) %>%
-  mutate(mean(PCB52/length)) %>%
-  distinct(`mean(PCB52/length)`) %>%
-  rename("PCB 4 mass in SPME (ng/cm); Control" = `mean(PCB52/length)`)
+  mutate(mean(PCB4/length)) %>%
+  distinct(`mean(PCB4/length)`) %>%
+  rename("PCB 4 mass in SPME (ng/cm); Control" = `mean(PCB4/length)`)
 
 exp.mspme.LB400 <- exp.data %>%
   filter(treatment == "LB400" & sampler == "SPME") %>%
   group_by(time) %>%
-  mutate(mean(PCB52/length)) %>%
-  distinct(`mean(PCB52/length)`) %>%
-  rename("PCB 4 mass in SPME (ng/cm); LB400" = `mean(PCB52/length)`) 
+  mutate(mean(PCB4/length)) %>%
+  distinct(`mean(PCB4/length)`) %>%
+  rename("PCB 4 mass in SPME (ng/cm); LB400" = `mean(PCB4/length)`) 
 
 exp.mpuf.control <- exp.data %>%
   filter(treatment == "Ctrl" & sampler == "PUF") %>%
   group_by(time) %>%
-  mutate(mean(PCB52)) %>%
-  distinct(`mean(PCB52)`) %>%
-  rename("PCB 4 mass in PUF (ng); Control" = `mean(PCB52)`)
+  mutate(mean(PCB4)) %>%
+  distinct(`mean(PCB4)`) %>%
+  rename("PCB 4 mass in PUF (ng); Control" = `mean(PCB4)`)
 
 exp.mpuf.LB400 <- exp.data %>%
   filter(treatment == "LB400" & sampler == "PUF") %>%
   group_by(time) %>%
-  mutate(mean(PCB52)) %>%
-  distinct(`mean(PCB52)`) %>%
-  rename("PCB 4 mass in PUF (ng); LB400" = `mean(PCB52)`)
+  mutate(mean(PCB4)) %>%
+  distinct(`mean(PCB4)`) %>%
+  rename("PCB 4 mass in PUF (ng); LB400" = `mean(PCB4)`)
 
 pcb.4 <- left_join(exp.mspme.control, exp.mpuf.control)  %>% 
   left_join(exp.mspme.LB400) %>% 
