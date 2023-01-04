@@ -1,7 +1,6 @@
 # Statistical analysis to review data, mostly between control
 # and experiments, same time points.
 
-
 # Packages and libraries --------------------------------------------------
 # Install packages
 install.packages("dplyr")
@@ -13,14 +12,14 @@ library(dplyr) # organize data
 library(reshape2) # organize data
 library(ggplot2) # plotting
 
-
 # Read data ---------------------------------------------------------------
-exp.data.0 <- read.csv("PCBDataV02.csv")
+exp.data <- read.csv("PCBDataV02.csv")
 
 # Organize data -----------------------------------------------------------
 # Remove lost sample(s), NA
-exp.data <- exp.data.0[!(rowSums(exp.data.0[, c(8:180)],
-                                   na.rm = TRUE)==0),]
+# Not sure, it deoends on the t test
+#exp.data <- exp.data.0[!(rowSums(exp.data.0[, c(8:180)],
+#                                   na.rm = TRUE)==0),]
 
 # spme = SPME fiber sampler
 # puf = PUF sampler
@@ -32,7 +31,65 @@ exp.mspme <- exp.data %>%
   group_by(time, treatment) %>%
   mutate(PCB4/length) %>%
   distinct(`PCB4/length`) %>%
-  rename("PCB 4 mass in SPME (ng/cm)" = `PCB4/length`)
+  rename("PCB4.SPME.(ng/cm)" = `PCB4/length`)
+# Time 1 and ctrl
+exp.mspme.t.1.ctrl <- exp.mspme %>%
+  filter(time == 1 & treatment == "Ctrl") %>%
+  rename("Ctrl" = 'PCB4.SPME.(ng/cm)')
+# Time 1 and LB400
+exp.mspme.t.1.LB400 <- exp.mspme %>%
+  filter(time == 1 & treatment == "LB400") %>%
+  rename("LB400" = 'PCB4.SPME.(ng/cm)')
+# Combine
+pcb4.t.1 <- data.frame(cbind(exp.mspme.t.1.ctrl$time,
+                   exp.mspme.t.1.ctrl$Ctrl,
+                   exp.mspme.t.1.LB400$LB400))
+# Add column names
+colnames(pcb4.t.1) <- c("time", "PCB4 SPME (ng/cm); Control",
+                         "PCB4 SPME (ng/cm); LB400")
+# t-test
+t.test(pcb4.t.1$`PCB4 SPME (ng/cm); Control`,
+       pcb4.t.1$`PCB4 SPME (ng/cm); LB400`, var.equal = TRUE)
+
+# Time 2 and ctrl
+exp.mspme.t.2.ctrl <- exp.mspme %>%
+  filter(time == 2 & treatment == "Ctrl") %>%
+  rename("Ctrl" = 'PCB4.SPME.(ng/cm)')
+# Time 2 and LB400
+exp.mspme.t.2.LB400 <- exp.mspme %>%
+  filter(time == 2 & treatment == "LB400") %>%
+  rename("LB400" = 'PCB4.SPME.(ng/cm)')
+# Combine
+pcb4.t.2 <- data.frame(cbind(exp.mspme.t.2.ctrl$time,
+                             exp.mspme.t.2.ctrl$Ctrl,
+                             exp.mspme.t.2.LB400$LB400))
+# Add column names
+colnames(pcb4.t.2) <- c("time", "PCB4 SPME (ng/cm); Control",
+                        "PCB4 SPME (ng/cm); LB400")
+# t-test
+t.test(pcb4.t.2$`PCB4 SPME (ng/cm); Control`,
+       pcb4.t.2$`PCB4 SPME (ng/cm); LB400`)
+
+# Time 3 and ctrl
+exp.mspme.t.3.ctrl <- exp.mspme %>%
+  filter(time == 3 & treatment == "Ctrl") %>%
+  rename("Ctrl" = 'PCB4.SPME.(ng/cm)')
+# Time 3 and LB400
+exp.mspme.t.3.LB400 <- exp.mspme %>%
+  filter(time == 3 & treatment == "LB400") %>%
+  rename("LB400" = 'PCB4.SPME.(ng/cm)')
+# Combine
+pcb4.t.3 <- data.frame(cbind(exp.mspme.t.3.ctrl$time,
+                             exp.mspme.t.3.ctrl$Ctrl,
+                             exp.mspme.t.3.LB400$LB400))
+# Add column names
+colnames(pcb4.t.3) <- c("time", "PCB4 SPME (ng/cm); Control",
+                        "PCB4 SPME (ng/cm); LB400")
+# t-test
+t.test(pcb4.t.3$`PCB4 SPME (ng/cm); Control`,
+       pcb4.t.3$`PCB4 SPME (ng/cm); LB400`, var.equal = TRUE)
+
+
 
 exp.mpuf <- exp.data %>%
   filter(sampler == "PUF") %>%
@@ -41,6 +98,10 @@ exp.mpuf <- exp.data %>%
   distinct(`PCB4`) %>%
   rename("PCB 4 mass in PUF (ng)" = `PCB4`)
 
+
+
+
+t.test(exp.mpuf$`PCB 4 mass in PUF (ng)`, exp.mspme$`PCB 4 mass in SPME (ng/cm)`)
 
 
 
