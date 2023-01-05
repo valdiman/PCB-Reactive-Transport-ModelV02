@@ -26,19 +26,23 @@ exp.data <- read.csv("PCBDataV02.csv")
 
 # Pull congener-specific data from the dataset & calculate mean
 # values for each sampler-treatment combination at each time point
+# Select congener, i
+i <- "PCB4"
 exp.mspme <- exp.data %>%
+  mutate(exp.data[i]/length) %>%
   filter(sampler == "SPME") %>%
   group_by(time, treatment) %>%
-  mutate(PCB4/length) %>%
-  distinct(`PCB4/length`) %>%
-  rename("PCB4.SPME.(ng/cm)" = `PCB4/length`)
-# Time 1 and ctrl
+  select(i) %>%
+  rename("PCB4.SPME.(ng/cm)" = `i`)
+# Organize data for t test
+# Select time, t, and ctrl
+t <- "1"
 exp.mspme.t.1.ctrl <- exp.mspme %>%
-  filter(time == 1 & treatment == "Ctrl") %>%
-  rename("Ctrl" = 'PCB4.SPME.(ng/cm)')
-# Time 1 and LB400
+  filter(time == t & treatment == "Ctrl") %>%
+  rename("Ctrl" = 'i.SPME.(ng/cm)')
+# LB400
 exp.mspme.t.1.LB400 <- exp.mspme %>%
-  filter(time == 1 & treatment == "LB400") %>%
+  filter(time == t & treatment == "LB400") %>%
   rename("LB400" = 'PCB4.SPME.(ng/cm)')
 # Combine
 pcb4.t.1 <- data.frame(cbind(exp.mspme.t.1.ctrl$time,
