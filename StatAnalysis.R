@@ -21,39 +21,50 @@ exp.data <- read.csv("PCBDataV02.csv")
 #exp.data <- exp.data.0[!(rowSums(exp.data.0[, c(8:180)],
 #                                   na.rm = TRUE)==0),]
 
-# spme = SPME fiber sampler
-# puf = PUF sampler
+# spme = SPME fiber sampler [ng/cm]
+# puf = PUF sampler [ng]
 
 # Pull congener-specific data from the dataset & calculate mean
 # values for each sampler-treatment combination at each time point
-# Select congener, i
+# (i) Select congener, i
 i <- "PCB4"
 exp.mspme <- exp.data %>%
   mutate(exp.data[i]/length) %>%
   filter(sampler == "SPME") %>%
   group_by(time, treatment) %>%
-  select(i) %>%
-  rename("PCB4.SPME.(ng/cm)" = `i`)
-# Organize data for t test
-# Select time, t, and ctrl
+  select(all_of(i)) %>%
+  rename("PCB4.SPME" = `i`)
+# (ii) Organize data for t test
+# Select time, t
 t <- "1"
-exp.mspme.t.1.ctrl <- exp.mspme %>%
-  filter(time == t & treatment == "Ctrl") %>%
-  rename("Ctrl" = 'i.SPME.(ng/cm)')
+exp.mspme.t.1 <- exp.mspme %>%
+  filter(time == t)
+exp.mspme.t.1 <- data.frame(Column1 = exp.mspme.t.1$`PCB4.SPME`[c(1:3)], 
+           Column2 = exp.mspme.t.1$`PCB4.SPME`[c(4:6)])
+exp.mspme.t.1 <- cbind(c(t, t, t), exp.mspme.t.1$Column1,
+                       exp.mspme.t.1$Column2)
+exp.mspme.t.1 <- as.numeric(exp.mspme.t.1)
+colnames(exp.mspme.t.1) <- c("time", "PCB4.SPME[Control]",
+                             "PCB4.SPME[LB400]")
+
+# t-test
+t.test(exp.mspme.t.1$`PCB4.SPME[Control]`,
+       exp.mspme.t.1$`PCB4.SPME[LB400]`, var.equal = TRUE)
+
+
 # LB400
 exp.mspme.t.1.LB400 <- exp.mspme %>%
-  filter(time == t & treatment == "LB400") %>%
-  rename("LB400" = 'PCB4.SPME.(ng/cm)')
+  filter(time == t & treatment == "LB400")
 # Combine
-pcb4.t.1 <- data.frame(cbind(exp.mspme.t.1.ctrl$time,
-                   exp.mspme.t.1.ctrl$Ctrl,
-                   exp.mspme.t.1.LB400$LB400))
+pcb4.t.1 <- data.frame(cbind(exp.mspme.t.1.ctrl[1],
+                   exp.mspme.t.1.ctrl[3],
+                   exp.mspme.t.1.LB400[3]))
 # Add column names
 colnames(pcb4.t.1) <- c("time", "PCB4 SPME (ng/cm); Control",
                          "PCB4 SPME (ng/cm); LB400")
 # t-test
-t.test(pcb4.t.1$`PCB4 SPME (ng/cm); Control`,
-       pcb4.t.1$`PCB4 SPME (ng/cm); LB400`, var.equal = TRUE)
+t.test(pcb4.t.1$`PCB4.SPME; Control`,
+       pcb4.t.1$`PCB4.SPME; LB400`, var.equal = TRUE)
 
 # Time 2 and ctrl
 exp.mspme.t.2.ctrl <- exp.mspme %>%
