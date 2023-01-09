@@ -1,5 +1,8 @@
-
-
+# Code to model PCB4 in laboratory experiments
+# using sediment from Altavista, VI. Passive measurements
+# of PCB4 in the water and the air phases are predicted and
+# linked to the water and air concentrations from the passive
+# samplers.
 
 # Packages and libraries --------------------------------------------------
 # Install packages
@@ -28,7 +31,7 @@ exp.data <- exp.data.0[!is.na(exp.data.0$PCB4), ]
 
 # Pull congener-specific data from the dataset & calculate mean
 # values for each sampler-treatment combination at each time point
-exp.mspme.control <- exp.data %>%
+{exp.mspme.control <- exp.data %>%
   filter(treatment == "Ctrl" & sampler == "SPME") %>%
   group_by(time) %>%
   mutate(mean(PCB4/length)) %>%
@@ -64,7 +67,7 @@ pcb.4 <- left_join(exp.mspme.control, exp.mpuf.control)  %>%
   add_row(time = 0, "PCB 4 mass in SPME (ng/cm); Control" = 0,
           "PCB 4 mass in PUF (ng); Control" = 0, 
           "PCB 4 mass in SPME (ng/cm); LB400" = 0,
-          "PCB 4 mass in PUF (ng); LB400" = 0, .before = 1)
+          "PCB 4 mass in PUF (ng); LB400" = 0, .before = 1)}
 
 # Reactive transport function ---------------------------------------------
 
@@ -94,7 +97,7 @@ rtm.PCB4 = function(t, c, parms){
   
   # PUF constants 
   Vpuf <- 0.000029 # m3 volume of PUF
-  Kpuf <- 10^(0.6366*logKoa - 3.1774)# m3/g PCB 52-PUF equilibrium partition coefficient
+  Kpuf <- 10^(0.6366*logKoa - 3.1774)# m3/g PCB 4-PUF equilibrium partition coefficient
   d <- 0.0213*100^3 # g/m3 density of PUF
   # ro <- 0.0005 # m3/d sampling rate
   
@@ -102,30 +105,30 @@ rtm.PCB4 = function(t, c, parms){
   Af <- 0.138 # cm2 SPME area
   Vf <- 0.000000069 # L/cm SPME volume/area
   L <- 30 # cm SPME length average
-  Kf <- 10^(1.06*logKow - 1.16) # PCB 52-SPME equilibrium partition coefficient
-  # ko <- 70 # cm/d PCB 52 mass transfer coefficient to SPME
+  Kf <- 10^(1.06*logKow - 1.16) # PCB 4-SPME equilibrium partition coefficient
+  # ko <- 70 # cm/d PCB 4 mass transfer coefficient to SPME
   
   # Air & water physical conditions
   D.water.air <- 0.2743615 # cm2/s water's diffusion coefficient in the gas phase @ Tair = 25 C, patm = 1013.25 mbars 
   D.co2.w <- 1.67606E-05 # cm2/s CO2's diffusion coefficient in water @ Tair = 25 C, patm = 1013.25 mbars 
-  D.pcb.air <- D.water.air*(MW.pcb/MH2O)^(-0.5) # cm2/s PCB 52's diffusion coefficient in the gas phase 
-  D.pcb.water <- D.co2.w*(MW.pcb/Mco2)^(-0.5) # cm2/s PCB 52's diffusion coefficient in water @ Tair = 25 C, patm = 1013.25 mbars
+  D.pcb.air <- D.water.air*(MW.pcb/MH2O)^(-0.5) # cm2/s PCB 4's diffusion coefficient in the gas phase 
+  D.pcb.water <- D.co2.w*(MW.pcb/Mco2)^(-0.5) # cm2/s PCB 4's diffusion coefficient in water @ Tair = 25 C, patm = 1013.25 mbars
   v.H2O <- 0.010072884	# cm2/s kinematic viscosity of water @ Tair = 25
   V.water.air <- 0.001 # m/s water's velocity of air-side mass transfer without ventilation (eq. 20-15)
   V.co2.w <- 9*10^-6 # m/s mass transfer coefficient of CO2 in water side without ventilation
-  SC.pcb.w <- v.H2O/D.pcb.water # Schmidt number PCB 52
-  bl <- 0.2 # cm boundary layer thickness
+  SC.pcb.w <- v.H2O/D.pcb.water # Schmidt number PCB 4
+  bl <- 0.1 # cm boundary layer thickness
   
   # kaw calculations (air-water mass transfer coefficient)
   # i) Ka.w.t, ka.w corrected by water and air temps during experiment
   Ka.w.t <- Ka.w*exp(-dUow/R*(1/Tw.1-1/Tst.1))*Tst.1/Tw.1
   # ii) Kaw.a, air-side mass transfer coefficient
   Kaw.a <- V.water.air*(D.pcb.air/D.water.air)^(0.67) # [m/s]
-  # iii) Kaw.w, water-side mass transfer coefficient for PCB 52. 600 is the Schmidt number of CO2 at 298 K
+  # iii) Kaw.w, water-side mass transfer coefficient for PCB 4. 600 is the Schmidt number of CO2 at 298 K
   Kaw.w <- V.co2.w*(SC.pcb.w/600)^(-0.5) # [m/s] 
-  # iv) kaw, overall air-water mass transfer coefficient for PCB 52
+  # iv) kaw, overall air-water mass transfer coefficient for PCB 4
   kaw.o <- (1/(Kaw.a*Ka.w.t) + (1/Kaw.w))^-1 # [m/s]
-  # v) kaw, overall air-water mass transfer coefficient for PCB 52, units change
+  # v) kaw, overall air-water mass transfer coefficient for PCB 4, units change
   kaw.o <- kaw.o*100*60*60*24 # [cm/d]
 
   # Estimating Cpw (PCB 52 concentration in sediment porewater)
@@ -148,7 +151,7 @@ rtm.PCB4 = function(t, c, parms){
   # dmfdt:
   r[2] <- ko*Af*c["Cw"]/1000/L - ko*Af*c["mf"]/(Vf*L*Kf*1000) # Cw = [ng/L], mf = [ng/cm]
   # dCadt:
-  r[3] <- c["Cw"]*(kaw.o*Aaw/Va)/10^6 - c["Ca"]*(kaw.o*Aaw/Ka.w.t/Va)/10^6
+  r[3] <- kaw.o*Aaw/(Va*10^6)*(c["Cw"] - c["Ca"]/Ka.w.t)
   # dmpufdt:
   r[4] <- ro*c["Ca"]*1000 - ro*(c["mpuf"]/(Vpuf*d))/(Kpuf) #  Ca = [ng/L], mpuf = [ng]
   
@@ -158,12 +161,12 @@ rtm.PCB4 = function(t, c, parms){
 }
 
 # Initial conditions and run function
-cinit <- c(Cw = 0, mf = 0, Ca = 0, mpuf = 0)
+{cinit <- c(Cw = 0, mf = 0, Ca = 0, mpuf = 0)
 t.1 <- pcb.4$time
 # Placeholder values of key parameters
 parms <- list(ro = 0.00008, ko = 2) # Input reasonable estimate of ko and ro (placeholder values)
 out.1 <- ode(y = cinit, times = t.1, func = rtm.PCB4, parms = parms)
-head(out.1)
+head(out.1)}
 
 # Fitting function --------------------------------------------------------
 # Sums of squares function for parameter fitting 
@@ -216,10 +219,10 @@ parest <- as.list(coef(fitval))
 parms <- list(ro = parest$ro, ko = parest$ko)
 
 # Simulated predicted profile at estimated parameter values
-cinit <- c(Cw = 0, mf = 0, Ca = 0, mpuf = 0)
+{cinit <- c(Cw = 0, mf = 0, Ca = 0, mpuf = 0)
 t.2 <- c(seq(0, 75, 1))
 out3 <- ode(y = cinit, times = t.2, func = rtm.PCB4, parms = parest)
-out.plot <- data.frame(out3)
+out.plot <- data.frame(out3)}
 
 # Plotting ----------------------------------------------------------------
 # (1) Plot of predicted vs experimental control data
@@ -270,7 +273,7 @@ mpuf <- ggplot(data = pred.mpuf, aes(x = time, y = mass)) +
   ggtitle("Control - PUF Results for PCB 4") +
   xlab(expression(bold("Time (day)"))) +
   ylab(expression(bold("PCB 4 PUF mass accumulated (ng/PUF)"))) +
-  ylim(0, 40) +
+  ylim(0, 600) +
   xlim(0, 80)
 
 print(mpuf)
