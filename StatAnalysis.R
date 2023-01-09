@@ -33,6 +33,7 @@ ggplot(exp.mspme, aes_string(x = colnames(exp.mspme[1]),
                              y = colnames(exp.mspme[3]),
                       group = colnames(exp.mspme[2]))) +
   geom_point(aes(shape = treatment, color = treatment)) +
+  # x-axis not scale
   scale_x_continuous(labels = c('16', '', '35', '', '75'))}
 
 # (ii) Organize data for t test
@@ -78,6 +79,7 @@ ggplot(exp.mpuf, aes_string(x = colnames(exp.mpuf[1]),
                              y = colnames(exp.mpuf[3]),
                              group = colnames(exp.mpuf[2]))) +
   geom_point(aes(shape = treatment, color = treatment)) +
+  # x-axis not scale
   scale_x_continuous(labels = c('16', '', '35', '', '75'))
 }
 
