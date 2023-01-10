@@ -117,7 +117,7 @@ rtm.PCB4 = function(t, c, parms){
   V.water.air <- 0.001 # m/s water's velocity of air-side mass transfer without ventilation (eq. 20-15)
   V.co2.w <- 9*10^-6 # m/s mass transfer coefficient of CO2 in water side without ventilation
   SC.pcb.w <- v.H2O/D.pcb.water # Schmidt number PCB 4
-  bl <- 0.1 # cm boundary layer thickness
+  bl <- 0.2 # cm boundary layer thickness
   
   # kaw calculations (air-water mass transfer coefficient)
   # i) Ka.w.t, ka.w corrected by water and air temps during experiment
@@ -164,7 +164,7 @@ rtm.PCB4 = function(t, c, parms){
 {cinit <- c(Cw = 0, mf = 0, Ca = 0, mpuf = 0)
 t.1 <- pcb.4$time
 # Placeholder values of key parameters
-parms <- list(ro = 0.00008, ko = 2) # Input reasonable estimate of ko and ro (placeholder values)
+parms <- list(ro = 0.0008, ko = 2) # Input reasonable estimate of ko and ro (placeholder values)
 out.1 <- ode(y = cinit, times = t.1, func = rtm.PCB4, parms = parms)
 head(out.1)}
 
