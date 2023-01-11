@@ -132,8 +132,6 @@ exp.data <- read.csv("PCBDataV02.csv")
 # spme = SPME fiber sampler [ng/cm]
 # Pull congener-specific data from the dataset & calculate mean
 # values for each sampler-treatment combination at each time point
-# (i) Select congener, i
-# PCBs 4, 17, 19, 31, 52
 i <- "PCB52"
 {exp.mspme <- exp.data %>%
     mutate(exp.data[all_of(i)]/length) %>%
@@ -163,8 +161,6 @@ ggplot(NULL, aes(x = time, y = mSPME)) +
 # spme = SPME fiber sampler [ng/cm]
 # Pull congener-specific data from the dataset & calculate mean
 # values for each sampler-treatment combination at each time point
-# (i) Select congener, i
-# PCBs 4, 17, 19, 31, 52
 {exp.mpuf <- exp.data %>%
     mutate(exp.data[all_of(i)]) %>%
     filter(sampler == "PUF") %>%
