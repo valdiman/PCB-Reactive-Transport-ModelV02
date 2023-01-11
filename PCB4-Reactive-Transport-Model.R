@@ -90,15 +90,15 @@ rtm.PCB4 = function(t, c, parms){
   Aws <- 30 # cm2
   
   # Congener-specific constants
-  logKoa <- 6.521554861 # PCB 4 octanol-air equilibrium partition coefficient
   Kaw <- 0.01344142 # PCB 4 dimensionless Henry's law constant @ 25 C
   dUaw <- 49662.48 # internal energy for the transfer of air-water for PCB 4 (J/mol)
   Kow <- 10^(4.65) # PCB 4 octanol-water equilibrium partition coefficient
   dUow <- -21338.96 # internal energy for the transfer of octanol-water for PCB 4 (J/mol)
+  Koa <- 10^(6.521554861) # PCB 4 octanol-air equilibrium partition coefficient
   
   # PUF constants 
   Vpuf <- 0.000029 # m3 volume of PUF
-  Kpuf <- 10^(0.6366*logKoa - 3.1774)# m3/g PCB 4-PUF equilibrium partition coefficient
+  Kpuf <- 10^(0.6366*log10(Koa) - 3.1774)# m3/g PCB 4-PUF equilibrium partition coefficient
   d <- 0.0213*100^3 # g/m3 density of PUF
   # ro <- 0.0005 # m3/d sampling rate
   
