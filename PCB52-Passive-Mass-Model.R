@@ -1,3 +1,6 @@
+# Code to predict and compare mass accumulated in both
+# SMPE and PUF sampler vs. experimental values
+
 # Load libraries
 library(dplyr) # organize data
 library(tidyverse)
