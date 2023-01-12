@@ -67,14 +67,14 @@ rtm.PCB31 = function(t, c, parms){
   kaw.o <- kaw.o*100*60*60*24 # [cm/d]
   
   # Estimating Cpw (PCB 4 concentration in sediment porewater)
-  Ct <- 254.599912 # ng/g PCB 19 sediment concentration
+  Ct <- 254.599912 # ng/g PCB 31 sediment concentration
   foc <- 0.03 # organic carbon % in sediment
   logKoc <- 0.94*log10(Kow) + 0.42 # koc calculation
   Kd <- foc*10^(logKoc) # L/kg sediment-water equilibrium partition coefficient
   Cpw <- Ct/Kd*1000 # [ng/L]
   
   # Biotransformation rate
-  kb <- 0 #0.130728499 # 1/d, value changes depending on experiment, i.e., control = 0, treatments LB400 = 0.130728499
+  kb <- 0.159307138 # 1/d, value changes depending on experiment, i.e., control = 0, treatments LB400 = 0.159307138
   
   # flux constant passed through a list called parms
   ro <- parms$ro # m3/d
@@ -100,7 +100,7 @@ rtm.PCB31 = function(t, c, parms){
 {cinit <- c(Cw = 0, mSPME = 0, Ca = 0, mPUF = 0)
 t.1 <- c(1:80)
 # Placeholder values of key parameters
-parms <- list(ro = 0.007, ko = 50) # Input reasonable estimate of ko and ro (placeholder values)
+parms <- list(ro = 0.007, ko = 100) # Input reasonable estimate of ko and ro (placeholder values)
 out.1 <- ode(y = cinit, times = t.1, func = rtm.PCB31, parms = parms) %>%
 as.data.frame() -> out.1
 }
@@ -118,10 +118,6 @@ ggplot(new.out, aes(x = time, y = value, color = variable)) +
   theme_classic() +
   labs(x = 'time (day)', y = 'Concentration')
 
-# Add experimental data
-# Read data ---------------------------------------------------------------
-exp.data <- read.csv("PCBDataV02.csv")
-
 # Organize SPME data -----------------------------------------------------------
 # spme = SPME fiber sampler [ng/cm]
 # Pull congener-specific data from the dataset & calculate mean
@@ -135,9 +131,13 @@ i <- "PCB31"
     rename(!!paste(i, ".SPME", sep ="") := `i`) %>%
     mutate(time = recode(time, `1` = 16, `2` = 35, `3` = 75))
   
-  exp.mspme.2 <- exp.mspme[1:9, 1:3] # experimental values
-  colnames(exp.mspme.2) <- c('time', 'treatment', 'mSPME')
-  exp.mspme.2 <- data.frame(exp.mspme.2)}
+  exp.mspme.ctrl <- exp.mspme[1:9, 1:3] # experimental control control
+  colnames(exp.mspme.ctrl) <- c('time', 'treatment', 'mSPME')
+  exp.mspme.ctrl <- data.frame(exp.mspme.ctrl)
+  exp.mspme.lb400 <- exp.mspme[10:18, 1:3] # experimental values LB400
+  colnames(exp.mspme.lb400) <- c('time', 'treatment', 'mSPME')
+  exp.mspme.lb400 <- data.frame(exp.mspme.lb400)
+}
 
 {out.mspme <- out.1[, c(1,3)]
   out.mspme$treatment <- c('pred')
@@ -145,14 +145,18 @@ i <- "PCB31"
 }
 
 # mSPME plot
-ggplot(NULL, aes(x = time, y = mSPME)) +
-  geom_line(data = out.mspme, color = "red") +
-  geom_point(data = exp.mspme.2, color = "blue") +
-  theme_classic() +
-  labs(x = 'time (day)', y = 'mSPME (ng/cm)')
+ggplot(NULL, aes(x = time, y = mSPME, color = treatment)) +
+  geom_line(data = out.mspme) +
+  geom_point(data = exp.mspme.ctrl, color = "blue") +
+  geom_point(data = exp.mspme.lb400, color = "red") +
+  theme_bw() +
+  theme(aspect.ratio = 3/3) +
+  labs(x = 'time (day)', y = paste(i, " SPME (ng/cm)", sep ="")) +
+  scale_color_manual(values = c("ctrl"="blue", "lb400"="red",
+                                "pred" = "black"))
 
 # Organize PUF data -----------------------------------------------------------
-# spme = PUF sampler [ng]
+# puf = PUF sampler [ng]
 # Pull congener-specific data from the dataset & calculate mean
 # values for each sampler-treatment combination at each time point
 {exp.mpuf <- exp.data %>%
@@ -163,9 +167,12 @@ ggplot(NULL, aes(x = time, y = mSPME)) +
   rename(!!paste(i, ".PUF", sep ="") := `i`) %>%
   mutate(time = recode(time, `1` = 16, `2` = 35, `3` = 75))
 
-exp.mpuf.2 <- exp.mpuf[1:9, 1:3] # experimental values
-colnames(exp.mpuf.2) <- c('time', 'treatment', 'mPUF')
-exp.mpuf.2 <- data.frame(exp.mpuf.2)
+exp.mpuf.ctrl <- exp.mpuf[1:9, 1:3] # experimental control values
+colnames(exp.mpuf.ctrl) <- c('time', 'treatment', 'mPUF')
+exp.mpuf.ctrl <- data.frame(exp.mpuf.ctrl)
+exp.mpuf.lb400 <- exp.mpuf[10:18, 1:3] # experimental values LB400
+colnames(exp.mpuf.lb400) <- c('time', 'treatment', 'mPUF')
+exp.mpuf.lb400 <- data.frame(exp.mpuf.lb400)
 
 out.mpuf <- out.1[, c(1,5)]
 out.mpuf$treatment <- c('pred')
@@ -173,9 +180,12 @@ out.mpuf <- out.mpuf %>% relocate(treatment, .before = mPUF) # predicted values
 }
 
 # mPUF plot
-ggplot(NULL, aes(x = time, y = mPUF)) +
-  geom_line(data = out.mpuf, color = "red") +
-  geom_point(data = exp.mpuf.2, color = "blue") +
-  theme_classic() +
-  labs(x = 'time (day)', y = 'mPUF (ng)')
-
+ggplot(NULL, aes(x = time, y = mPUF, color = treatment)) +
+  geom_line(data = out.mpuf) +
+  geom_point(data = exp.mpuf.ctrl, color = "blue") +
+  geom_point(data = exp.mpuf.lb400, color = "red") +
+  theme_bw() +
+  theme(aspect.ratio = 3/3) +
+  labs(x = 'time (day)', y = paste(i, " PUF (ng)", sep ="")) +
+  scale_color_manual(values = c("ctrl"="blue", "lb400"="red",
+                                "pred" = "black"))
