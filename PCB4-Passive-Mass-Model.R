@@ -137,9 +137,13 @@ i <- "PCB4"
     rename(!!paste(i, ".SPME", sep ="") := `i`) %>%
     mutate(time = recode(time, `1` = 16, `2` = 35, `3` = 75))
   
-  exp.mspme.2 <- exp.mspme[1:9, 1:3] # experimental values
-  colnames(exp.mspme.2) <- c('time', 'treatment', 'mSPME')
-  exp.mspme.2 <- data.frame(exp.mspme.2)}
+  exp.mspme.ctrl <- exp.mspme[1:9, 1:3] # experimental values control
+  colnames(exp.mspme.ctrl) <- c('time', 'treatment', 'mSPME')
+  exp.mspme.ctrl <- data.frame(exp.mspme.ctrl)
+  exp.mspme.lb400 <- exp.mspme[10:18, 1:3] # experimental values LB400
+  colnames(exp.mspme.lb400) <- c('time', 'treatment', 'mSPME')
+  exp.mspme.lb400 <- data.frame(exp.mspme.lb400)
+  }
 
 {out.mspme <- out.1[, c(1,3)]
   out.mspme$treatment <- c('pred')
@@ -147,14 +151,17 @@ i <- "PCB4"
 }
 
 # mSPME plot
-ggplot(NULL, aes(x = time, y = mSPME)) +
-  geom_line(data = out.mspme, color = "red") +
-  geom_point(data = exp.mspme.2, color = "blue") +
+ggplot(NULL, aes(x = time, y = mSPME, color = treatment)) +
+  geom_line(data = out.mspme) +
+  geom_point(data = exp.mspme.ctrl, color = "blue") +
+  geom_point(data = exp.mspme.lb400, color = "red") +
   theme_classic() +
-  labs(x = 'time (day)', y = 'mSPME (ng/cm)')
+  labs(x = 'time (day)', y = paste(i, ".SPME (ng/cm)", sep ="")) +
+  scale_color_manual(values = c("ctrl"="blue", "lb400"="red",
+                                "pred" = "black"))
 
-# Organize SPME data -----------------------------------------------------------
-# spme = SPME fiber sampler [ng/cm]
+# Organize PUF data -----------------------------------------------------------
+# puf = PUF sampler [ng]
 # Pull congener-specific data from the dataset & calculate mean
 # values for each sampler-treatment combination at each time point
 {exp.mpuf <- exp.data %>%
