@@ -76,7 +76,7 @@ rtm.PCB4 = function(t, c, parms){
   Cpw <- Ct/Kd*1000 # [ng/L]
   
   # Biotransformation rate
-  kb <- 0 # 0.130728499 # 1/d, value changes depending on experiment, i.e., control = 0, treatments LB400 = 0.130728499
+  kb <- 0.178374771 # 1/d, value changes depending on experiment, i.e., control = 0, treatments LB400 = 0.178374771
   
   # flux constant passed through a list called parms
   ro <- parms$ro # m3/d
@@ -155,8 +155,9 @@ ggplot(NULL, aes(x = time, y = mSPME, color = treatment)) +
   geom_line(data = out.mspme) +
   geom_point(data = exp.mspme.ctrl, color = "blue") +
   geom_point(data = exp.mspme.lb400, color = "red") +
-  theme_classic() +
-  labs(x = 'time (day)', y = paste(i, ".SPME (ng/cm)", sep ="")) +
+  theme_bw() +
+  theme(aspect.ratio = 3/3) +
+  labs(x = 'time (day)', y = paste(i, " SPME (ng/cm)", sep ="")) +
   scale_color_manual(values = c("ctrl"="blue", "lb400"="red",
                                 "pred" = "black"))
 
@@ -189,8 +190,9 @@ ggplot(NULL, aes(x = time, y = mPUF, color = treatment)) +
   geom_line(data = out.mpuf) +
   geom_point(data = exp.mpuf.ctrl, color = "blue") +
   geom_point(data = exp.mpuf.lb400, color = "red") +
-  theme_classic() +
-  labs(x = 'time (day)', y = paste(i, ".PUF (ng)", sep ="")) +
+  theme_bw() +
+  theme(aspect.ratio = 3/3) +
+  labs(x = 'time (day)', y = paste(i, " PUF (ng)", sep ="")) +
   scale_color_manual(values = c("ctrl"="blue", "lb400"="red",
                                 "pred" = "black"))
 
