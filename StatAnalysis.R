@@ -19,7 +19,7 @@ exp.data <- read.csv("PCBDataV02.csv")
 # values for each sampler-treatment combination at each time point
 # (i) Select congener, i
 # PCBs 4, 17, 19, 31, 52
-i <- "PCB4"
+i <- "PCB19"
 {exp.mspme <- exp.data %>%
   mutate(exp.data[all_of(i)]/length) %>%
   filter(sampler == "SPME") %>%
