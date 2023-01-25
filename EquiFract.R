@@ -13,6 +13,7 @@ Tst.1 <- 273.15 + Tst # air and standard temperature in K, 25 C
 Tw <- 13 # C water temperature
 Tw.1 <- 273.15 + Tw # water temperature in K
 R <- 8.3144 # J/(mol K) molar gas constant
+# PCB 4
 Kaw <- 0.01344142 # PCB 4 dimensionless Henry's law constant @ 25 C
 dUaw <- 49662.48 # internal energy for the transfer of air-water for PCB 4 (J/mol)
 Kow <- 10^(4.65) # PCB 4 octanol-water equilibrium partition coefficient Lw/kgoctanol
@@ -43,6 +44,7 @@ fSPME <- ((Kf*Vf*L)/Vw)/den2
 # Mass balance
 fSPME/fw2*100
 fSPME/fsed2*100
+fw2/fsed2*100
 
 # (iii) Sediment, water, air
 den3 <- 1 + ((Kf*Vf*L)/Vw) + ((Koc*ms*foc/1000)/Vw) + (Kaw.t*Va/Vw)
