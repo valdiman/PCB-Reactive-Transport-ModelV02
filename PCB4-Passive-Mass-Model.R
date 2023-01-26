@@ -73,10 +73,10 @@ rtm.PCB4 = function(t, c, parms){
   foc <- 0.03 # organic carbon % in sediment
   logKoc <- 0.94*log10(Kow) + 0.42 # koc calculation
   Kd <- foc*10^(logKoc) # L/kg sediment-water equilibrium partition coefficient
-  Cpw <- Ct/Kd*1000 # [ng/L]
+  Cpw <- Ct/Kd*1000*(1) # [ng/L]
   
   # Biotransformation rate
-  kb <- 0 # 0.6161 # 1/d, value changes depending on experiment, i.e., control = 0, treatments LB400 = 0.178374771
+  kb <- 0.6161 # 1/d, value changes depending on experiment, i.e., control = 0, treatments LB400 = 0.178374771
   
   # flux constant passed through a list called parms
   ro <- parms$ro # m3/d
@@ -85,7 +85,7 @@ rtm.PCB4 = function(t, c, parms){
   # derivatives dx/dt are computed below
   r <- rep(0,length(c))
   # dCwdt:
-  r[1] <- kaw.o*Aaw/Vw*(c["Ca"]/(Kaw.t) - c["Cw"]) + D.pcb.water*Aws*60*60*24/bl/Vw*(Cpw/1000 - c["Cw"]) - kb*c["Cw"]
+  r[1] <- kaw.o*Aaw/Vw*(c["Ca"]/(Kaw.t) - c["Cw"]) + D.pcb.water*Aws*60*60*24/bl/Vw*(Cpw - c["Cw"]) - kb*c["Cw"]
   # dmfdt:
   r[2] <- ko*Af*c["Cw"]/1000/L - ko*Af*c["mSPME"]/(Vf*Kf*L*1000) # Cw = [ng/L], mf = [ng/cm]
   # dCadt:
@@ -100,14 +100,14 @@ rtm.PCB4 = function(t, c, parms){
 
 # Initial conditions and run function
 {cinit <- c(Cw = 0, mSPME = 0, Ca = 0, mPUF = 0)
-t.1 <- c(1:200)
+t.1 <- c(1:90)
 # Placeholder values of key parameters
-parms <- list(ro = 0.0045, ko = 100) # Input reasonable estimate of ko and ro (placeholder values)
-out.1 <- ode(y = cinit, times = t.1, func = rtm.PCB4, parms = parms) %>%
-as.data.frame() -> out.1
+parms <- list(ro = 0.0045, ko = 5) # Input reasonable estimate of ko and ro (placeholder values)
+out <- ode(y = cinit, times = t.1, func = rtm.PCB4, parms = parms) %>%
+as.data.frame() -> out
 }
 
-{new.out<- out.1 %>%
+{new.out<- out %>%
   gather(variable, value, -time)
 new.out <- within(new.out, variable <- factor(variable,
                                               levels = c('Cw', 'mSPME', 'Ca', 'mPUF')))
@@ -116,7 +116,7 @@ new.out <- within(new.out, variable <- factor(variable,
 # Plot
 ggplot(new.out, aes(x = time, y = value, color = variable)) +
   facet_wrap(vars(variable), scales = "free_y", ncol = 2) +
-  geom_line(size = 2) +
+  geom_line(linewidth = 2) +
   theme_classic() +
   labs(x = 'time (day)', y = 'Concentration')
 
