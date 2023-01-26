@@ -71,7 +71,7 @@ rtm.PCB17 = function(t, c, parms){
   foc <- 0.03 # organic carbon % in sediment
   logKoc <- 0.94*log10(Kow) + 0.42 # koc calculation
   Kd <- foc*10^(logKoc) # L/kg sediment-water equilibrium partition coefficient
-  Cpw <- Ct/Kd*1000 # [ng/L]
+  Cpw <- Ct/Kd*1000*(1.2) # [ng/L]
   
   # Biotransformation rate
   kb <- 0.2843 # 1/d, value changes depending on experiment, i.e., control = 0, treatments LB400 = 0.163562
