@@ -31,7 +31,7 @@ rtm.PCB52 = function(t, c, parms){
   Kaw <- 0.0130452 # PCB 52 dimensionless Henry's law constant @ 25 C
   dUaw <- 55517.96 # internal energy for the transfer of air-water for PCB 52 (J/mol)
   Kow <- 10^(5.84) # PCB 52 octanol-water equilibrium partition coefficient
-  dUow <- -24438.92 # internal energy for the transfer of octanol-water for PCB 4 (J/mol)
+  dUow <- -24438.92 # internal energy for the transfer of octanol-water for PCB 52 (J/mol)
   Koa <- 10^(7.724554861) # PCB 52 octanol-air equilibrium partition coefficient
   
   # PUF constants 
