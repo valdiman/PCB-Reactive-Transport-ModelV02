@@ -71,10 +71,10 @@ rtm.PCB17 = function(t, c, parms){
   foc <- 0.03 # organic carbon % in sediment
   logKoc <- 0.94*log10(Kow) + 0.42 # koc calculation
   Kd <- foc*10^(logKoc) # L/kg sediment-water equilibrium partition coefficient
-  Cpw <- Ct/Kd*1000*(1.2) # [ng/L]
+  Cpw <- Ct/Kd*1000*(1) # [ng/L]
   
   # Biotransformation rate
-  kb <- 0.2843 # 1/d, value changes depending on experiment, i.e., control = 0, treatments LB400 = 0.163562
+  kb <- 0 # 0.2843 1/d, value changes depending on experiment, i.e., control = 0, treatments LB400 = 0.163562
   
   # flux constant passed through a list called parms
   ro <- parms$ro # m3/d
@@ -98,17 +98,25 @@ rtm.PCB17 = function(t, c, parms){
 
 # Initial conditions and run function
 {cinit <- c(Cw = 0, mSPME = 0, Ca = 0, mPUF = 0)
-t.1 <- c(1:80)
+t <- c(1:80)
 # Placeholder values of key parameters
-parms <- list(ro = 0.0045, ko = 50) # Input reasonable estimate of ko and ro (placeholder values)
-out.1 <- ode(y = cinit, times = t.1, func = rtm.PCB17, parms = parms) %>%
-as.data.frame() -> out.1
+parms <- list(ro = 0.0045, ko = 100) # Input reasonable estimate of ko and ro (placeholder values)
+out.PCB17 <- ode(y = cinit, times = t, func = rtm.PCB17, parms = parms) %>%
+as.data.frame() -> out.PCB17
 }
 
-{new.out<- out.1 %>%
+# Estimate % depletion from Cw
+L <- 30 # cm SPME length average
+Vw <- 100 # cm3 water volume
+out.PCB17$Depletion <- (out.PCB17$mSPME*L)/(out.PCB17$Cw*Vw/1000)*100
+
+
+{new.out<- out.PCB17 %>%
   gather(variable, value, -time)
-new.out <- within(new.out, variable <- factor(variable,
-                                              levels = c('Cw', 'mSPME', 'Ca', 'mPUF')))
+  new.out <- within(new.out,
+                    variable <- factor(variable,
+                                       levels = c('Cw', 'mSPME', 'Ca',
+                                                  'mPUF', 'Depletion')))
 }
 
 # Plot
@@ -143,7 +151,7 @@ i <- "PCB17"
   exp.mspme.lb400 <- data.frame(exp.mspme.lb400)
 }
 
-{out.mspme <- out.1[, c(1,3)]
+{out.mspme <- out.PCB17[, c(1,3)]
   out.mspme$treatment <- c('pred')
   out.mspme <- out.mspme %>% relocate(treatment, .before = mSPME) # predicted values
 }
@@ -178,7 +186,7 @@ exp.mpuf.lb400 <- exp.mpuf[10:18, 1:3] # experimental values LB400
 colnames(exp.mpuf.lb400) <- c('time', 'treatment', 'mPUF')
 exp.mpuf.lb400 <- data.frame(exp.mpuf.lb400)
 
-out.mpuf <- out.1[, c(1,5)]
+out.mpuf <- out.PCB17[, c(1,5)]
 out.mpuf$treatment <- c('pred')
 out.mpuf <- out.mpuf %>% relocate(treatment, .before = mPUF) # predicted values
 }
