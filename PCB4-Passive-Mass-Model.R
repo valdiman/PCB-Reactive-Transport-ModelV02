@@ -112,12 +112,17 @@ as.data.frame() -> out.PCB4
 Vw <- 100 # cm3 water volume
 out.PCB4$Depletion <- (out.PCB4$mSPME*L)/(out.PCB4$Cw*Vw/1000)*100}
 
+# Estimate % depletion from total
+{Ct <- 630.2023 # ng/g PCB 19 sediment concentration
+  ms <- 10 # g
+  out.PCB4$DepletionT <- (out.PCB4$mSPME*L)/(Ct*ms)*100}
+
 {new.out<- out.PCB4 %>%
   gather(variable, value, -time)
 new.out <- within(new.out,
                   variable <- factor(variable,
                                      levels = c('Cw', 'mSPME', 'Ca',
-                                                'mPUF', 'Depletion')))
+                                                'mPUF', 'Depletion', 'DepletionT')))
 }
 
 # Plot
