@@ -73,7 +73,7 @@ rtm.SPME.1 = function(t, c, parms){
   foc <- 0.03 # organic carbon % in sediment
   logKoc <- 0.94*log10(Kow) + 0.42 # koc calculation
   Kd <- foc*10^(logKoc) # L/kg sediment-water equilibrium partition coefficient
-  Cpw <- Ct/Kd*1000*(2) # [ng/L]
+  Cpw <- Ct/Kd*1000*(1) # [ng/L]
   
   # Biotransformation rate
   kb <- 0 #0.6161 # 1/d, value changes depending on experiment, i.e., control = 0, treatments LB400 = 0.178374771
@@ -100,7 +100,7 @@ rtm.SPME.1 = function(t, c, parms){
 
 # Initial conditions and run function
 {cinit <- c(Cw = 0, mSPME = 0, Ca = 0, mPUF = 0)
-t <- c(1:23)
+t <- c(1:80)
 # Placeholder values of key parameters
 parms <- list(ko = 10, ro = 0.002)
 out.1 <- ode(y = cinit, times = t, func = rtm.SPME.1, parms = parms)
