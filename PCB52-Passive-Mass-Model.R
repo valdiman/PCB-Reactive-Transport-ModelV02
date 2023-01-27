@@ -104,17 +104,24 @@ rtm.PCB52 = function(t, c, parms){
 
 # Initial conditions and run function
 {cinit <- c(Cw = 0, mSPME = 0, Ca = 0, mPUF = 0)
-t.1 <- c(1:80)
+t <- c(1:80)
 # Placeholder values of key parameters
-parms <- list(ro = 0.008, ko = 200) # Input reasonable estimate of ko and ro (placeholder values)
-out.1 <- ode(y = cinit, times = t.1, func = rtm.PCB52, parms = parms) %>%
-as.data.frame() -> out.1
+parms <- list(ro = 0.008, ko = 100) # Input reasonable estimate of ko and ro (placeholder values)
+out.PCB52 <- ode(y = cinit, times = t, func = rtm.PCB52, parms = parms) %>%
+as.data.frame() -> out.PCB52
 }
 
-{new.out<- out.1 %>%
+# Estimate % depletion from Cw
+{L <- 30 # cm SPME length average
+Vw <- 100 # cm3 water volume
+out.PCB52$Depletion <- (out.PCB52$mSPME*L)/(out.PCB52$Cw*Vw/1000)*100}
+
+{new.out<- out.PCB52 %>%
   gather(variable, value, -time)
-new.out <- within(new.out, variable <- factor(variable,
-                                              levels = c('Cw', 'mSPME', 'Ca', 'mPUF')))
+new.out <- within(new.out,
+                  variable <- factor(variable,
+                                     levels = c('Cw', 'mSPME', 'Ca',
+                                                'mPUF', 'Depletion')))
 }
 
 # All plots
