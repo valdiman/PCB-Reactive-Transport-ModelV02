@@ -76,7 +76,7 @@ rtm.PCB4 = function(t, c, parms){
   Cpw <- Ct/Kd*1000*(1) # [ng/L]
   
   # Biotransformation rate
-  kb <- 0.6161 # 1/d, value changes depending on experiment, i.e., control = 0, treatments LB400 = 0.178374771
+  kb <- 0 # 0.6161 1/d, value changes depending on experiment, i.e., control = 0, treatments LB400 = 0.178374771
   
   # flux constant passed through a list called parms
   ro <- parms$ro # m3/d
@@ -102,7 +102,7 @@ rtm.PCB4 = function(t, c, parms){
 {cinit <- c(Cw = 0, mSPME = 0, Ca = 0, mPUF = 0)
 t.1 <- c(1:90)
 # Placeholder values of key parameters
-parms <- list(ro = 0.0045, ko = 5) # Input reasonable estimate of ko and ro (placeholder values)
+parms <- list(ro = 0.0045, ko = 50) # Input reasonable estimate of ko and ro (placeholder values)
 out.PCB4 <- ode(y = cinit, times = t.1, func = rtm.PCB4, parms = parms) %>%
 as.data.frame() -> out.PCB4
 }
