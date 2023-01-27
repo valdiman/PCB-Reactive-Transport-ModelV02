@@ -106,17 +106,22 @@ as.data.frame() -> out.PCB17
 }
 
 # Estimate % depletion from Cw
-L <- 30 # cm SPME length average
+{L <- 30 # cm SPME length average
 Vw <- 100 # cm3 water volume
-out.PCB17$Depletion <- (out.PCB17$mSPME*L)/(out.PCB17$Cw*Vw/1000)*100
+out.PCB17$Depletion <- (out.PCB17$mSPME*L)/(out.PCB17$Cw*Vw/1000)*100}
 
+# Estimate % depletion from total
+{Ct <- 307.3052312 # ng/g PCB 17 sediment concentration
+  ms <- 10 # g
+  out.PCB17$DepletionT <- (out.PCB17$mSPME*L)/(Ct*ms)*100}
 
 {new.out<- out.PCB17 %>%
   gather(variable, value, -time)
   new.out <- within(new.out,
                     variable <- factor(variable,
                                        levels = c('Cw', 'mSPME', 'Ca',
-                                                  'mPUF', 'Depletion')))
+                                                  'mPUF', 'Depletion',
+                                                  'DepletionT')))
 }
 
 # Plot
