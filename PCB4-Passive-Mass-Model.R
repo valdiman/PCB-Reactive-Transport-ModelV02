@@ -103,14 +103,21 @@ rtm.PCB4 = function(t, c, parms){
 t.1 <- c(1:90)
 # Placeholder values of key parameters
 parms <- list(ro = 0.0045, ko = 5) # Input reasonable estimate of ko and ro (placeholder values)
-out <- ode(y = cinit, times = t.1, func = rtm.PCB4, parms = parms) %>%
-as.data.frame() -> out
+out.PCB4 <- ode(y = cinit, times = t.1, func = rtm.PCB4, parms = parms) %>%
+as.data.frame() -> out.PCB4
 }
 
-{new.out<- out %>%
+# Estimate % depletion from Cw
+{L <- 30 # cm SPME length average
+Vw <- 100 # cm3 water volume
+out.PCB4$Depletion <- (out.PCB4$mSPME*L)/(out.PCB4$Cw*Vw/1000)*100}
+
+{new.out<- out.PCB4 %>%
   gather(variable, value, -time)
-new.out <- within(new.out, variable <- factor(variable,
-                                              levels = c('Cw', 'mSPME', 'Ca', 'mPUF')))
+new.out <- within(new.out,
+                  variable <- factor(variable,
+                                     levels = c('Cw', 'mSPME', 'Ca',
+                                                'mPUF', 'Depletion')))
 }
 
 # Plot
@@ -145,7 +152,7 @@ i <- "PCB4"
   exp.mspme.lb400 <- data.frame(exp.mspme.lb400)
   }
 
-{out.mspme <- out.1[, c(1,3)]
+{out.mspme <- out.PCB4[, c(1,3)]
   out.mspme$treatment <- c('pred')
   out.mspme <- out.mspme %>% relocate(treatment, .before = mSPME) # predicted values
 }
@@ -180,7 +187,7 @@ exp.mpuf.lb400 <- exp.mpuf[10:18, 1:3] # experimental values LB400
 colnames(exp.mpuf.lb400) <- c('time', 'treatment', 'mPUF')
 exp.mpuf.lb400 <- data.frame(exp.mpuf.lb400)
 
-out.mpuf <- out.1[, c(1,5)]
+out.mpuf <- out.PCB4[, c(1,5)]
 out.mpuf$treatment <- c('pred')
 out.mpuf <- out.mpuf %>% relocate(treatment, .before = mPUF) # predicted values
 }
