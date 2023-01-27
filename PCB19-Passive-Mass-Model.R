@@ -98,17 +98,30 @@ rtm.PCB19 = function(t, c, parms){
 
 # Initial conditions and run function
 {cinit <- c(Cw = 0, mSPME = 0, Ca = 0, mPUF = 0)
-t.1 <- c(1:80)
+t <- c(1:80)
 # Placeholder values of key parameters
 parms <- list(ro = 0.007, ko = 50) # Input reasonable estimate of ko and ro (placeholder values)
-out.1 <- ode(y = cinit, times = t.1, func = rtm.PCB19, parms = parms) %>%
-as.data.frame() -> out.1
+out.PCB19 <- ode(y = cinit, times = t, func = rtm.PCB19, parms = parms) %>%
+as.data.frame() -> out.PCB19
 }
 
-{new.out<- out.1 %>%
+# Estimate % depletion from Cw
+{L <- 30 # cm SPME length average
+  Vw <- 100 # cm3 water volume
+  out.PCB19$Depletion <- (out.PCB19$mSPME*L)/(out.PCB19$Cw*Vw/1000)*100}
+
+# Estimate % depletion from total
+{Ct <- 259.8342356 # ng/g PCB 19 sediment concentration
+ms <- 10 # g
+out.PCB19$DepletionT <- (out.PCB19$mSPME*L)/(Ct*ms)*100}
+
+{new.out<- out.PCB19 %>%
   gather(variable, value, -time)
-new.out <- within(new.out, variable <- factor(variable,
-                                              levels = c('Cw', 'mSPME', 'Ca', 'mPUF')))
+  new.out <- within(new.out,
+                    variable <- factor(variable,
+                                       levels = c('Cw', 'mSPME', 'Ca',
+                                                  'mPUF', 'Depletion',
+                                                  'DepletionT')))
 }
 
 # Plot
@@ -143,7 +156,7 @@ i <- "PCB19"
   exp.mspme.lb400 <- data.frame(exp.mspme.lb400)
 }
 
-{out.mspme <- out.1[, c(1,3)]
+{out.mspme <- out.PCB19[, c(1,3)]
   out.mspme$treatment <- c('pred')
   out.mspme <- out.mspme %>% relocate(treatment, .before = mSPME) # predicted values
 }
@@ -178,7 +191,7 @@ exp.mpuf.lb400 <- exp.mpuf[10:18, 1:3] # experimental values LB400
 colnames(exp.mpuf.lb400) <- c('time', 'treatment', 'mPUF')
 exp.mpuf.lb400 <- data.frame(exp.mpuf.lb400)
 
-out.mpuf <- out.1[, c(1,5)]
+out.mpuf <- out.PCB19[, c(1,5)]
 out.mpuf$treatment <- c('pred')
 out.mpuf <- out.mpuf %>% relocate(treatment, .before = mPUF) # predicted values
 }
