@@ -23,7 +23,7 @@ rtm.SPME.1 = function(t, c, parms){
   Ct <- 630.2023 # ng/g PCB 4 sediment concentration
   foc <- 0.03 # organic carbon % in sediment
   Kd <- foc*10^(4.791) # L/kg sediment-water equilibrium partition coefficient
-  Cpw <- Ct/Kd*1000*(1) # [ng/L]
+  Cpw <- Ct/Kd*1000*(1.2) # [ng/L]
   
   # Partitioning and mass transfer
   kaw.o <- 62.1094 # [cm/d]
@@ -58,9 +58,9 @@ rtm.SPME.1 = function(t, c, parms){
 
 # Initial conditions and run function
 {cinit <- c(Cw = 0, mSPME = 0, Ca = 0, mPUF = 0)
-t <- c(1:80)
+t <- c(1:23)
 # Placeholder values of key parameters
-parms <- list(ko = 10, ro = 0.002)
+parms <- list(ko = 10, ro = 0.005)
 out.1 <- ode(y = cinit, times = t, func = rtm.SPME.1, parms = parms)
 out.1 <- data.frame(out.1)}
 
@@ -86,7 +86,7 @@ rtm.SPME.2 = function(t, c, parms){
   Ct <- 630.2023 # ng/g PCB 4 sediment concentration
   foc <- 0.03 # organic carbon % in sediment
   Kd <- foc*10^(4.791) # L/kg sediment-water equilibrium partition coefficient
-  Cpw <- Ct/Kd*1000*(1) # [ng/L]
+  Cpw <- Ct/Kd*1000*(1.2) # [ng/L]
   
   # Partitioning and mass transfer
   kaw.o <- 62.1094 # [cm/d]
@@ -123,7 +123,7 @@ rtm.SPME.2 = function(t, c, parms){
 {cinit <- c(Cw = out.1$Cw[23], mSPME = out.1$mSPME[23], Ca = out.1$Ca[23], mPUF = out.1$mPUF[23]) # 90% of mSPME
   t <- c(24:80)
   # Placeholder values of key parameters
-  parms <- list(ko = 10, ro = 0.002)
+  parms <- list(ko = 10, ro = 0.005)
   out.2 <- ode(y = cinit, times = t, func = rtm.SPME.2, parms = parms)
   out.2 <- data.frame(out.2)}
 
