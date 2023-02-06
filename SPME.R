@@ -1,8 +1,8 @@
 # Load libraries
-library(dplyr) # organize data
+{library(dplyr) # organize data
 library(tidyverse)
 library(ggplot2) # plotting
-library(deSolve) # solving differential equations
+library(deSolve)} # solving differential equations
 
 # Reactive transport function ---------------------------------------------
 
@@ -73,7 +73,7 @@ rtm.SPME.1 = function(t, c, parms){
   foc <- 0.03 # organic carbon % in sediment
   logKoc <- 0.94*log10(Kow) + 0.42 # koc calculation
   Kd <- foc*10^(logKoc) # L/kg sediment-water equilibrium partition coefficient
-  Cpw <- Ct/Kd*1000*(1) # [ng/L]
+  Cpw <- Ct/Kd*1000*(2) # [ng/L]
   
   # Biotransformation rate
   kb <- 0 #0.6161 # 1/d, value changes depending on experiment, i.e., control = 0, treatments LB400 = 0.178374771
@@ -100,7 +100,7 @@ rtm.SPME.1 = function(t, c, parms){
 
 # Initial conditions and run function
 {cinit <- c(Cw = 0, mSPME = 0, Ca = 0, mPUF = 0)
-t <- c(1:80)
+t <- c(1:23)
 # Placeholder values of key parameters
 parms <- list(ko = 10, ro = 0.002)
 out.1 <- ode(y = cinit, times = t, func = rtm.SPME.1, parms = parms)
@@ -204,7 +204,8 @@ rtm.SPME.2 = function(t, c, parms){
 }
 
 # Initial conditions and run function
-{cinit <- c(Cw = out.1$Cw[23], mSPME = out.1$mSPME[23], Ca = out.1$Ca[23], mPUF = out.1$mPUF[23]) # 90% of mSPME
+{cinit <- c(Cw = out.1$Cw[23], mSPME = out.1$mSPME[23], Ca = out.1$Ca[23],
+            mPUF = out.1$mPUF[23]) # 90% of mSPME
   t <- c(24:80)
   # Placeholder values of key parameters
   parms <- list(ko = 10, ro = 0.002)
