@@ -225,6 +225,14 @@ rtm.SPME.2 = function(t, c, parms){
     gather(variable, value, -time)
   new.out.2 <- within(new.out.2, variable <- factor(variable,
                                                     levels = c('Cw', 'mSPME', 'Ca', 'mPUF')))}
+
+# Estimate % depletion from Cw
+{
+  L <- 30 # cm SPME length average
+  Vw <- 100 # cm3 water volume
+  (out.2$mSPME*L)/(out.2$Cw*Vw/1000)*100
+}
+
 # Merge both results (new.out.1 and mew.out.2)
 new.out.3 <- merge(x = new.out.1, y = new.out.2, all = TRUE)
 
