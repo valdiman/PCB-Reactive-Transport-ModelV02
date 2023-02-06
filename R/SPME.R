@@ -1,8 +1,10 @@
 # Load libraries
-{library(dplyr) # organize data
-library(tidyverse)
-library(ggplot2) # plotting
-library(deSolve)} # solving differential equations
+{
+  library(dplyr) # organize data
+  library(tidyverse)
+  library(ggplot2) # plotting
+  library(deSolve) # solving differential equations
+  }
 
 # Reactive transport function ---------------------------------------------
 
@@ -110,6 +112,13 @@ out.1 <- data.frame(out.1)}
   gather(variable, value, -time)
 new.out.1 <- within(new.out.1, variable <- factor(variable,
                                                 levels = c('Cw', 'mSPME', 'Ca', 'mPUF')))}
+
+# Estimate % depletion from Cw
+{
+  L <- 30 # cm SPME length average
+  Vw <- 100 # cm3 water volume
+  (out.1$mSPME*L)/(out.1$Cw*Vw/1000)*100
+  }
 
 rtm.SPME.2 = function(t, c, parms){
   
