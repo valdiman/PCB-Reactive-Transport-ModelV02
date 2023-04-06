@@ -111,7 +111,7 @@ rtm.SPME.1 = function(t, c, parms){
 # Initial conditions and run function
 {
   cinit <- c(Cw = 0, mSPME = 0, Ca = 0, mPUF = 0)
-  t <- c(1:23)
+  t <- c(1:75)
   # Placeholder values of key parameters
   parms <- list(ko = 10, ro = 0.002)
   out.1 <- ode(y = cinit, times = t, func = rtm.SPME.1, parms = parms)
@@ -125,6 +125,94 @@ rtm.SPME.1 = function(t, c, parms){
                       variable <- factor(variable,
                                          levels = c('Cw', 'mSPME', 'Ca', 'mPUF')))
 }
+
+# Plot
+ggplot(new.out.1, aes(x = time, y = value, color = variable)) +
+  facet_wrap(vars(variable), scales = "free_y", nrow =  2) +
+  geom_line(linewidth = 2) +
+  theme_classic() +
+  labs(x = 'time (day)', y = 'Concentration')
+
+# Add experimental data
+# Read data ---------------------------------------------------------------
+exp.data <- read.csv("Data/PCBDataV02.csv")
+
+# Organize SPME data -----------------------------------------------------------
+# spme = SPME fiber sampler [ng/cm]
+# Pull congener-specific data from the dataset & calculate mean
+# values for each sampler-treatment combination at each time point
+i <- "PCB4"
+{
+  exp.mspme <- exp.data %>%
+    mutate(exp.data[all_of(i)]/length) %>%
+    filter(sampler == "SPME") %>%
+    group_by(time, treatment) %>%
+    select(all_of(i)) %>%
+    rename(!!paste(i, ".SPME", sep ="") := `i`) %>%
+    mutate(time = recode(time, `1` = 16, `2` = 35, `3` = 75))
+  
+  exp.mspme.ctrl <- exp.mspme[1:9, 1:3] # experimental control control
+  colnames(exp.mspme.ctrl) <- c('time', 'treatment', 'mSPME')
+  exp.mspme.ctrl <- data.frame(exp.mspme.ctrl)
+  exp.mspme.lb400 <- exp.mspme[10:18, 1:3] # experimental values LB400
+  colnames(exp.mspme.lb400) <- c('time', 'treatment', 'mSPME')
+  exp.mspme.lb400 <- data.frame(exp.mspme.lb400)
+}
+
+#out.3 <- merge(out.1, out.2, all = TRUE)
+
+{
+  out.mspme <- out.1[, c(1,3)]
+  out.mspme$treatment <- c('pred')
+  out.mspme <- out.mspme %>% relocate(treatment, .before = mSPME) # predicted values
+}
+
+# mSPME plot
+ggplot(NULL, aes(x = time, y = mSPME, color = treatment)) +
+  geom_line(data = out.mspme) +
+  geom_point(data = exp.mspme.ctrl, color = "blue") +
+  geom_point(data = exp.mspme.lb400, color = "red") +
+  theme_bw() +
+  theme(aspect.ratio = 3/3) +
+  labs(x = 'time (day)', y = paste(i, " SPME (ng/cm)", sep ="")) +
+  scale_color_manual(values = c("ctrl"="blue", "lb400"="red",
+                                "pred" = "black"))
+
+# Organize PUF data -----------------------------------------------------------
+# puf = PUF sampler [ng]
+# Pull congener-specific data from the dataset & calculate mean
+# values for each sampler-treatment combination at each time point
+{
+  exp.mpuf <- exp.data %>%
+    mutate(exp.data[all_of(i)]) %>%
+    filter(sampler == "PUF") %>%
+    group_by(time, treatment) %>%
+    select(all_of(i)) %>%
+    rename(!!paste(i, ".PUF", sep ="") := `i`) %>%
+    mutate(time = recode(time, `1` = 16, `2` = 35, `3` = 75))
+  
+  exp.mpuf.ctrl <- exp.mpuf[1:9, 1:3] # experimental control values
+  colnames(exp.mpuf.ctrl) <- c('time', 'treatment', 'mPUF')
+  exp.mpuf.ctrl <- data.frame(exp.mpuf.ctrl)
+  exp.mpuf.lb400 <- exp.mpuf[10:18, 1:3] # experimental values LB400
+  colnames(exp.mpuf.lb400) <- c('time', 'treatment', 'mPUF')
+  exp.mpuf.lb400 <- data.frame(exp.mpuf.lb400)
+  
+  out.mpuf <- out.1[, c(1,5)]
+  out.mpuf$treatment <- c('pred')
+  out.mpuf <- out.mpuf %>% relocate(treatment, .before = mPUF) # predicted values
+}
+
+# mPUF plot
+ggplot(NULL, aes(x = time, y = mPUF, color = treatment)) +
+  geom_line(data = out.mpuf) +
+  geom_point(data = exp.mpuf.ctrl, color = "blue") +
+  geom_point(data = exp.mpuf.lb400, color = "red") +
+  theme_bw() +
+  theme(aspect.ratio = 3/3) +
+  labs(x = 'time (day)', y = paste(i, " PUF (ng)", sep ="")) +
+  scale_color_manual(values = c("ctrl"="blue", "lb400"="red",
+                                "pred" = "black"))
 
 # Estimate % depletion from Cw
 {
@@ -342,5 +430,4 @@ ggplot(NULL, aes(x = time, y = mPUF, color = treatment)) +
   labs(x = 'time (day)', y = paste(i, " PUF (ng)", sep ="")) +
   scale_color_manual(values = c("ctrl"="blue", "lb400"="red",
                                 "pred" = "black"))
-
 
