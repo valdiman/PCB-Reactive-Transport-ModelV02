@@ -97,7 +97,7 @@ rtm.SPME.1 = function(t, c, parms){
   # dCwdt:
   r[1] <- kaw.o*Aaw/Vw*(c["Ca"]/(Kaw.t) - c["Cw"]) + D.pcb.water*Aws*60*60*24/bl/Vw*(Cpw - c["Cw"]) - kb*c["Cw"]
   # dmfdt:
-  r[2] <- ko*Af*c["Cw"]/1000/L - ko*Af*c["mSPME"]/(Vf*Kf*L*1000) # Cw = [ng/L], mf = [ng/cm]
+  r[2] <- ko*Af*c["Cw"]/1000/L - (ko/Kf)*Af*c["mSPME"]/(Vf*Kf*L*1000) # Cw = [ng/L], mf = [ng/cm]
   # dCadt:
   r[3] <- kaw.o*Aaw/Va*(c["Cw"] - c["Ca"]/Kaw.t)
   # dmpufdt:
@@ -113,7 +113,7 @@ rtm.SPME.1 = function(t, c, parms){
   cinit <- c(Cw = 0, mSPME = 0, Ca = 0, mPUF = 0)
   t <- c(1:75)
   # Placeholder values of key parameters
-  parms <- list(ko = 10, ro = 0.002)
+  parms <- list(ko = 100, ro = 0.002)
   out.1 <- ode(y = cinit, times = t, func = rtm.SPME.1, parms = parms)
   out.1 <- data.frame(out.1)
 }
@@ -126,6 +126,9 @@ rtm.SPME.1 = function(t, c, parms){
                                          levels = c('Cw', 'mSPME', 'Ca', 'mPUF')))
 }
 
+# Export output
+write.csv(out.1, file = "Output/Data/csv/Prediction.csv")
+
 # Plot predictions for Cw, mSPME, Ca and mPUF
 ggplot(new.out.1, aes(x = time, y = value, color = variable)) +
   facet_wrap(vars(variable), scales = "free_y", nrow =  2) +
@@ -134,7 +137,7 @@ ggplot(new.out.1, aes(x = time, y = value, color = variable)) +
   labs(x = 'time (day)', y = 'Concentration')
 
 
-# Add and plot experimenta data to predicted data -------------------------
+# Add and plot observation and predicted data -------------------------
 # Read data
 exp.data <- read.csv("Data/PCBDataV02.csv")
 
