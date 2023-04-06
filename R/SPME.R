@@ -126,15 +126,16 @@ rtm.SPME.1 = function(t, c, parms){
                                          levels = c('Cw', 'mSPME', 'Ca', 'mPUF')))
 }
 
-# Plot
+# Plot predictions for Cw, mSPME, Ca and mPUF
 ggplot(new.out.1, aes(x = time, y = value, color = variable)) +
   facet_wrap(vars(variable), scales = "free_y", nrow =  2) +
   geom_line(linewidth = 2) +
   theme_classic() +
   labs(x = 'time (day)', y = 'Concentration')
 
-# Add experimental data
-# Read data ---------------------------------------------------------------
+
+# Add and plot experimenta data to predicted data -------------------------
+# Read data
 exp.data <- read.csv("Data/PCBDataV02.csv")
 
 # Organize SPME data -----------------------------------------------------------
@@ -158,8 +159,6 @@ i <- "PCB4"
   colnames(exp.mspme.lb400) <- c('time', 'treatment', 'mSPME')
   exp.mspme.lb400 <- data.frame(exp.mspme.lb400)
 }
-
-#out.3 <- merge(out.1, out.2, all = TRUE)
 
 {
   out.mspme <- out.1[, c(1,3)]
@@ -214,11 +213,12 @@ ggplot(NULL, aes(x = time, y = mPUF, color = treatment)) +
   scale_color_manual(values = c("ctrl"="blue", "lb400"="red",
                                 "pred" = "black"))
 
-# Estimate % depletion from Cw
+# Estimate depletion from Cw ----------------------------------------------
+
 {
   L <- 30 # cm SPME length average
   Vw <- 100 # cm3 water volume
-  (out.1$mSPME*L)/(out.1$Cw*Vw/1000)*100
+  deplet <- (out.1$mSPME*L)/(out.1$Cw*Vw/1000)*100
 }
 
 rtm.SPME.2 = function(t, c, parms){
