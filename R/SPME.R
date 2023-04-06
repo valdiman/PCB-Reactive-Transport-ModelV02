@@ -1,10 +1,18 @@
+# Install packages
+install.packages("dplyr")
+install.packages("reshape2")
+install.packages("ggplot2")
+install.packages("deSolve")
+install.packages("tidyverse")
+
 # Load libraries
 {
   library(dplyr) # organize data
-  library(tidyverse)
+  library(reshape2) # organize data
   library(ggplot2) # plotting
   library(deSolve) # solving differential equations
-  }
+  library(tidyverse) # function gather
+}
 
 # Reactive transport function ---------------------------------------------
 
@@ -101,24 +109,29 @@ rtm.SPME.1 = function(t, c, parms){
 }
 
 # Initial conditions and run function
-{cinit <- c(Cw = 0, mSPME = 0, Ca = 0, mPUF = 0)
-t <- c(1:23)
-# Placeholder values of key parameters
-parms <- list(ko = 10, ro = 0.002)
-out.1 <- ode(y = cinit, times = t, func = rtm.SPME.1, parms = parms)
-out.1 <- data.frame(out.1)}
-
-{new.out.1 <- out.1 %>%
-  gather(variable, value, -time)
-new.out.1 <- within(new.out.1, variable <- factor(variable,
-                                                levels = c('Cw', 'mSPME', 'Ca', 'mPUF')))}
+{
+  cinit <- c(Cw = 0, mSPME = 0, Ca = 0, mPUF = 0)
+  t <- c(1:23)
+  # Placeholder values of key parameters
+  parms <- list(ko = 10, ro = 0.002)
+  out.1 <- ode(y = cinit, times = t, func = rtm.SPME.1, parms = parms)
+  out.1 <- data.frame(out.1)
+}
+# Reshaping out.1 to be "long"
+{
+  new.out.1 <- out.1 %>%
+    gather(variable, value, -time)
+  new.out.1 <- within(new.out.1,
+                      variable <- factor(variable,
+                                         levels = c('Cw', 'mSPME', 'Ca', 'mPUF')))
+}
 
 # Estimate % depletion from Cw
 {
   L <- 30 # cm SPME length average
   Vw <- 100 # cm3 water volume
   (out.1$mSPME*L)/(out.1$Cw*Vw/1000)*100
-  }
+}
 
 rtm.SPME.2 = function(t, c, parms){
   
@@ -213,18 +226,24 @@ rtm.SPME.2 = function(t, c, parms){
 }
 
 # Initial conditions and run function
-{cinit <- c(Cw = out.1$Cw[23], mSPME = out.1$mSPME[23], Ca = out.1$Ca[23],
-            mPUF = out.1$mPUF[23]) # 90% of mSPME
+{
+  cinit <- c(Cw = out.1$Cw[23], mSPME = out.1$mSPME[23], Ca = out.1$Ca[23],
+             mPUF = out.1$mPUF[23]) # 90% of mSPME
   t <- c(24:80)
   # Placeholder values of key parameters
   parms <- list(ko = 10, ro = 0.002)
   out.2 <- ode(y = cinit, times = t, func = rtm.SPME.2, parms = parms)
-  out.2 <- data.frame(out.2)}
+  out.2 <- data.frame(out.2)
+}
 
-{new.out.2 <- out.2 %>%
+# Reshaping out.2 to be "long"
+{
+  new.out.2 <- out.2 %>%
     gather(variable, value, -time)
-  new.out.2 <- within(new.out.2, variable <- factor(variable,
-                                                    levels = c('Cw', 'mSPME', 'Ca', 'mPUF')))}
+  new.out.2 <- within(new.out.2,
+                      variable <- factor(variable,
+                                         levels = c('Cw', 'mSPME', 'Ca', 'mPUF')))
+}
 
 # Estimate % depletion from Cw
 {
@@ -252,7 +271,8 @@ exp.data <- read.csv("Data/PCBDataV02.csv")
 # Pull congener-specific data from the dataset & calculate mean
 # values for each sampler-treatment combination at each time point
 i <- "PCB4"
-{exp.mspme <- exp.data %>%
+{
+  exp.mspme <- exp.data %>%
     mutate(exp.data[all_of(i)]/length) %>%
     filter(sampler == "SPME") %>%
     group_by(time, treatment) %>%
@@ -270,7 +290,8 @@ i <- "PCB4"
 
 out.3 <- merge(out.1, out.2, all = TRUE)
 
-{out.mspme <- out.3[, c(1,3)]
+{
+  out.mspme <- out.3[, c(1,3)]
   out.mspme$treatment <- c('pred')
   out.mspme <- out.mspme %>% relocate(treatment, .before = mSPME) # predicted values
 }
@@ -290,24 +311,25 @@ ggplot(NULL, aes(x = time, y = mSPME, color = treatment)) +
 # puf = PUF sampler [ng]
 # Pull congener-specific data from the dataset & calculate mean
 # values for each sampler-treatment combination at each time point
-{exp.mpuf <- exp.data %>%
-  mutate(exp.data[all_of(i)]) %>%
-  filter(sampler == "PUF") %>%
-  group_by(time, treatment) %>%
-  select(all_of(i)) %>%
-  rename(!!paste(i, ".PUF", sep ="") := `i`) %>%
-  mutate(time = recode(time, `1` = 16, `2` = 35, `3` = 75))
-
-exp.mpuf.ctrl <- exp.mpuf[1:9, 1:3] # experimental control values
-colnames(exp.mpuf.ctrl) <- c('time', 'treatment', 'mPUF')
-exp.mpuf.ctrl <- data.frame(exp.mpuf.ctrl)
-exp.mpuf.lb400 <- exp.mpuf[10:18, 1:3] # experimental values LB400
-colnames(exp.mpuf.lb400) <- c('time', 'treatment', 'mPUF')
-exp.mpuf.lb400 <- data.frame(exp.mpuf.lb400)
-
-out.mpuf <- out.3[, c(1,5)]
-out.mpuf$treatment <- c('pred')
-out.mpuf <- out.mpuf %>% relocate(treatment, .before = mPUF) # predicted values
+{
+  exp.mpuf <- exp.data %>%
+    mutate(exp.data[all_of(i)]) %>%
+    filter(sampler == "PUF") %>%
+    group_by(time, treatment) %>%
+    select(all_of(i)) %>%
+    rename(!!paste(i, ".PUF", sep ="") := `i`) %>%
+    mutate(time = recode(time, `1` = 16, `2` = 35, `3` = 75))
+  
+  exp.mpuf.ctrl <- exp.mpuf[1:9, 1:3] # experimental control values
+  colnames(exp.mpuf.ctrl) <- c('time', 'treatment', 'mPUF')
+  exp.mpuf.ctrl <- data.frame(exp.mpuf.ctrl)
+  exp.mpuf.lb400 <- exp.mpuf[10:18, 1:3] # experimental values LB400
+  colnames(exp.mpuf.lb400) <- c('time', 'treatment', 'mPUF')
+  exp.mpuf.lb400 <- data.frame(exp.mpuf.lb400)
+  
+  out.mpuf <- out.3[, c(1,5)]
+  out.mpuf$treatment <- c('pred')
+  out.mpuf <- out.mpuf %>% relocate(treatment, .before = mPUF) # predicted values
 }
 
 # mPUF plot
@@ -320,6 +342,5 @@ ggplot(NULL, aes(x = time, y = mPUF, color = treatment)) +
   labs(x = 'time (day)', y = paste(i, " PUF (ng)", sep ="")) +
   scale_color_manual(values = c("ctrl"="blue", "lb400"="red",
                                 "pred" = "black"))
-
 
 
