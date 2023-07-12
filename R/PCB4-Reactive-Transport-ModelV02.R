@@ -13,14 +13,16 @@ install.packages("deSolve")
 install.packages("minpack.lm")
 
 # Load libraries
-library(dplyr) # organize data
-library(reshape2) # organize data
-library(ggplot2) # plotting
-library(deSolve) # solving differential equations
-library(minpack.lm) # least squares fit using levenberg-marquart algorithm
+{
+  library(dplyr) # organize data
+  library(reshape2) # organize data
+  library(ggplot2) # plotting
+  library(deSolve) # solving differential equations
+  library(minpack.lm) # least squares fit using levenberg-marquart algorithm
+}
 
 # Read data ---------------------------------------------------------------
-exp.data.0 <- read.csv("PCBDataV02.csv")
+exp.data.0 <- read.csv("Data/PCBDataV02.csv")
 
 # Organize data -----------------------------------------------------------
 # Remove lost sample(s), NA
@@ -86,6 +88,7 @@ rtm.PCB4 = function(t, c, parms){
   # Bioreactor parameters
   Vw <- 100 # cm3 water volume
   Va <- 125 # cm3 headspace volumne
+  Vp <- 1 # cm3 (guest)
   Aaw <- 20 # cm2 
   Aws <- 30 # cm2
   
@@ -142,23 +145,23 @@ rtm.PCB4 = function(t, c, parms){
   Kd <- foc*10^(logKoc) # L/kg sediment-water equilibrium partition coefficient
   Cpw <- Ct/Kd*1000 # [ng/L]
   
-  # Biotransformation rate
-  kb <- 0 # 1/d, value changes depending on experiment, i.e., control = 0, treatments LB400 = 0.130728499
-
   # flux constant passed through a list called parms
   ro <- parms$ro # m3/d
   ko <- parms$ko # cm/d
   
   # derivatives dx/dt are computed below
+  # C = ng/L
   r <- rep(0,length(c))
   # dCwdt:
-  r[1] <- kaw.o*Aaw/Vw*(c["Ca"]/(Kaw.t) - c["Cw"]) - kb*c["Cw"] + D.pcb.water*Aws*60*60*24/bl/Vw*(Cpw - c["Cw"]) # 864 to change second to days and um to m
-  # dmfdt:
-  r[2] <- ko*Af*c["Cw"]/1000/L - ko*Af*c["mf"]/(Vf*L*Kf*1000) # Cw = [ng/L], mf = [ng/cm]
+  r[1] <- kaw.o*Aaw/Vw*(c["Ca"]/(Kaw.t) - c["Cw"]) + (D.pcb.water/bl)*Aws*60*60*24/Vw*(c["Cpw"] - c["Cw"]) + ko*Af/Vw*(c["mf"]/(Vf*Kf) - c["Cw"]) # 864 to change second to days and um to m
+  # dCpwdt:
+  r[2] <- (D.pcb.water/bl)*Aws*60*60*24/Vp*(c["Cw"]- c["Cpw"])
   # dCadt:
-  r[3] <- kaw.o*Aaw/Va*(c["Cw"] - c["Ca"]/Kaw.t)
+  r[3] <- kaw.o*Aaw/Va*(c["Cw"] - c["Ca"]/Kaw.t)*100^3 + ro/Va*(c["mpuf"]/(Vpuf*d*Kpuf*1000) - c["Ca"])
+  # dmfdt:
+  r[4] <- ko*Af*c["Cw"]/1000/L - ko*Af*c["mf"]/(Vf*L*Kf*1000) # Cw = [ng/L], mf = [ng/cm]
   # dmpufdt:
-  r[4] <- ro*c["Ca"]*1000 - ro*(c["mpuf"]/(Vpuf*d))/(Kpuf) #  Ca = [ng/L], mpuf = [ng]
+  r[5] <- ro*c["Ca"]*1000 - ro*(c["mpuf"]/(Vpuf*d))/(Kpuf) #  Ca = [ng/L], mpuf = [ng]
   
   # The computed derivatives are returned as a list
   # order of derivatives needs to be the same as the order of species in c
@@ -166,12 +169,14 @@ rtm.PCB4 = function(t, c, parms){
 }
 
 # Initial conditions and run function
-{cinit <- c(Cw = 0, mf = 0, Ca = 0, mpuf = 0)
-t.1 <- pcb.4$time
-# Placeholder values of key parameters
-parms <- list(ro = 0.0056, ko = 5) # Input reasonable estimate of ko and ro (placeholder values)
-out.1 <- ode(y = cinit, times = t.1, func = rtm.PCB4, parms = parms)
-head(out.1)}
+{
+  cinit <- c(Cw = 0, mf = 0, Ca = 0, mpuf = 0, Cpw = 242)
+  t.1 <- pcb.4$time
+  # Placeholder values of key parameters
+  parms <- list(ro = 0.0056, ko = 5) # Input reasonable estimate of ko and ro (placeholder values)
+  out.1 <- ode(y = cinit, times = t.1, func = rtm.PCB4, parms = parms)
+  head(out.1)
+}
 
 # Fitting function --------------------------------------------------------
 # Sums of squares function for parameter fitting 
