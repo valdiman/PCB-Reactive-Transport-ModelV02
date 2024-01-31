@@ -15,29 +15,68 @@ install.packages("ggplot2")
 }
 
 # SPME Calibration Analysis -----------------------------------------------
-# Read Data
-
 # Read data from Excel sheets
 data.1 <- read_excel("Data/SPMECalibration.xlsx", sheet = "day5_14")
 data.2 <- read_excel("Data/SPMECalibration.xlsx", sheet = "day42")
 data.3 <- read_excel("Data/SPMECalibration.xlsx", sheet = "day85")
 data.4 <- read_excel("Data/SPMECalibration.xlsx", sheet = "nonshaken")
+data.5 <- read_excel("Data/SPMECalibration.xlsx", sheet = "shaken")
 
+# Calibration data --------------------------------------------------------
 # Select individual congeners from datasets
-pcbi <- "PCB4"
+pcbi <- "PCB184"
 
 # Extract relevant columns from each dataset
-d.1.pcbi <- data.1[, c("sample", "treatment", "replicate",
-                       "time", "length", pcbi)]
-d.2.pcbi <- data.2[, c("sample", "treatment", "replicate",
-                       "time", "length", pcbi)]
-d.3.pcbi <- data.3[, c("sample", "treatment", "replicate",
-                       "time", "length", pcbi)]
-d.4.pcbi <- data.4[, c("sample", "treatment", "replicate",
-                       "time", "length", pcbi)]
+{
+  d.1.pcbi <- data.1[, c("sample", "treatment", "replicate",
+                         "time", "length", pcbi)]
+  d.2.pcbi <- data.2[, c("sample", "treatment", "replicate",
+                         "time", "length", pcbi)]
+  d.3.pcbi <- data.3[, c("sample", "treatment", "replicate",
+                         "time", "length", pcbi)]
+  d.4.pcbi <- data.4[, c("sample", "treatment", "replicate",
+                         "time", "length", pcbi)]
+  d.5.pcbi <- data.5[, c("sample", "treatment", "replicate",
+                         "time", "length", pcbi)]
+}
 
 # Combine data frames into one
-pcb.i <- rbind(d.1.pcbi, d.2.pcbi, d.3.pcbi, d.4.pcbi)
+pcb.cali <- rbind(d.1.pcbi, d.2.pcbi, d.3.pcbi)
+
+# Modify replicate variable to group specific levels together
+pcb.cali$replicate_grouped <- ifelse(pcb.cali$replicate %in% c("r.3.1",
+                                                         "r.3.2", "r.3.3"),
+                                  "r.3", pcb.cali$replicate)
+
+# Recode the "r.3" levels in replicate_grouped to "r.3.n"
+pcb.cali$replicate_grouped <- recode(pcb.cali$replicate_grouped,
+                                     "r.3" = "r.3.n")
+
+pcb.cali.plot <- ggplot(pcb.cali, aes(x = time, y = get(pcbi)/length,
+                  color = replicate_grouped)) +
+  geom_point() +
+  theme_bw() +
+  #theme(aspect.ratio = 5/10) +
+  labs(x = expression(bold("Time (day)")),
+       y = bquote(bold(.(pcbi) ~ "(ng/cm)")),  # Display the value of pcbi in y-axis label
+       color = "Replicates") +
+  theme(axis.text.y = element_text(face = "bold", size = 10),
+        axis.title.y = element_text(face = "bold", size = 10),
+        axis.text.x = element_text(face = "bold", size = 10),
+        axis.title.x = element_text(face = "bold", size = 10)) +
+  xlab(expression(bold("Time (day)"))) +
+  theme(axis.text.x = element_text(face = "bold", size = 10),
+        axis.title.x = element_text(face = "bold", size = 10))
+
+print(pcb.cali.plot)
+
+# Save plot in folder
+ggsave("Output/Plots/PCB4Calibration.png",
+       plot = pcb.cali.plot, width = 10, height = 5, dpi = 500)
+
+# All data ----------------------------------------------------------------
+# Combine data frames into one
+pcb.i <- rbind(d.1.pcbi, d.2.pcbi, d.3.pcbi, d.4.pcbi, d.5.pcbi)
 
 # Create a new variable to group replicates r.3.1, r.3.2,
 # and r.3.3 into one category
@@ -48,10 +87,11 @@ pcb.i$replicate_grouped <- ifelse(pcb.i$replicate %in% c("r.3.1",
                                          pcb.i$replicate))
 
 # Create plot
-ggplot(pcb.i, aes(x = time, y = !!as.name(pcbi)/length,
+pcbi.plot <- ggplot(pcb.i, aes(x = time, y = !!as.name(pcbi)/length,
                   color = replicate_grouped, shape = treatment)) +
   geom_point(size = ifelse(pcb.i$treatment %in% c("calibration",
-                                                  "nonshaken"), 2.5, 1)) +
+                                                  "nonshaken", "shaken"),
+                           2.5, 1)) +
   scale_color_manual(values = c("r.1" = "blue", "r.2" = "red",
                                 "r.3" = "green", "r.3.x" = "purple")) +
   labs(x = expression(bold("Time (day)")),
@@ -61,6 +101,11 @@ ggplot(pcb.i, aes(x = time, y = !!as.name(pcbi)/length,
   theme_bw() +
   theme(legend.position = "right")
 
+print(pcbi.plot)
+
+# Save plot in folder
+ggsave("Output/Plots/PCB4.png",
+       plot = pcbi.plot, width = 10, height = 5, dpi = 500)
 
 # Read data ---------------------------------------------------------------
 exp.data <- read.csv("Data/PCBDataV02.csv")
