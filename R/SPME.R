@@ -95,7 +95,9 @@ rtm.SPME.1 = function(t, c, parms){
   # derivatives dx/dt are computed below
   r <- rep(0,length(c))
   # dCwdt:
-  r[1] <- kaw.o*Aaw/Vw*(c["Ca"]/(Kaw.t) - c["Cw"]) + D.pcb.water*Aws*60*60*24/bl/Vw*(Cpw - c["Cw"]) - kb*c["Cw"]
+  #r[1] <- kaw.o*Aaw/Vw*(c["Ca"]/(Kaw.t) - c["Cw"]) + D.pcb.water*Aws*60*60*24/bl/Vw*(Cpw - c["Cw"]) - kb*c["Cw"]
+  # Fix mtc sediment-water (original 0.91884)
+  r[1] <- kaw.o*Aaw/Vw*(c["Ca"]/(Kaw.t) - c["Cw"]) + 0.001*(Cpw - c["Cw"]) - kb*c["Cw"]
   # dmfdt:
   r[2] <- ko*Af*c["Cw"]/1000/L - (ko/Kf)*Af*c["mSPME"]/(Vf*Kf*L*1000) # Cw = [ng/L], mf = [ng/cm]
   # dCadt:
