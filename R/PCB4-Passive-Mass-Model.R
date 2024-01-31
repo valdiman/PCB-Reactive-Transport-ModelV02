@@ -99,30 +99,36 @@ rtm.PCB4 = function(t, c, parms){
 }
 
 # Initial conditions and run function
-{cinit <- c(Cw = 0, mSPME = 0, Ca = 0, mPUF = 0)
-t.1 <- c(1:90)
-# Placeholder values of key parameters
-parms <- list(ro = 0.0045, ko = 50) # Input reasonable estimate of ko and ro (placeholder values)
-out.PCB4 <- ode(y = cinit, times = t.1, func = rtm.PCB4, parms = parms) %>%
-as.data.frame() -> out.PCB4
+{
+  cinit <- c(Cw = 0, mSPME = 0, Ca = 0, mPUF = 0)
+  t.1 <- c(1:90)
+  # Placeholder values of key parameters
+  parms <- list(ro = 0.0045, ko = 50) # Input reasonable estimate of ko and ro (placeholder values)
+  out.PCB4 <- ode(y = cinit, times = t.1, func = rtm.PCB4, parms = parms) %>%
+    as.data.frame() -> out.PCB4
 }
 
 # Estimate % depletion from Cw
-{L <- 30 # cm SPME length average
-Vw <- 100 # cm3 water volume
-out.PCB4$Depletion <- (out.PCB4$mSPME*L)/(out.PCB4$Cw*Vw/1000)*100}
+{
+  L <- 30 # cm SPME length average
+  Vw <- 100 # cm3 water volume
+  out.PCB4$Depletion <- (out.PCB4$mSPME*L)/(out.PCB4$Cw*Vw/1000)*100
+}
 
 # Estimate % depletion from total
-{Ct <- 630.2023 # ng/g PCB 19 sediment concentration
+{
+  Ct <- 630.2023 # ng/g PCB 19 sediment concentration
   ms <- 10 # g
-  out.PCB4$DepletionT <- (out.PCB4$mSPME*L)/(Ct*ms)*100}
+  out.PCB4$DepletionT <- (out.PCB4$mSPME*L)/(Ct*ms)*100
+}
 
-{new.out<- out.PCB4 %>%
+{
+  new.out<- out.PCB4 %>%
   gather(variable, value, -time)
-new.out <- within(new.out,
-                  variable <- factor(variable,
-                                     levels = c('Cw', 'mSPME', 'Ca',
-                                                'mPUF', 'Depletion', 'DepletionT')))
+  new.out <- within(new.out,
+                    variable <- factor(variable,
+                                       levels = c('Cw', 'mSPME', 'Ca',
+                                                  'mPUF', 'Depletion', 'DepletionT')))
 }
 
 # Plot
