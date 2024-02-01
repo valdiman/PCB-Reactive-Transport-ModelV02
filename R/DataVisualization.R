@@ -24,7 +24,7 @@ data.5 <- read_excel("Data/SPMECalibration.xlsx", sheet = "shaken")
 
 # Calibration data --------------------------------------------------------
 # Select individual congeners from datasets
-pcbi <- "PCB184"
+pcbi <- "PCB4"
 
 # Extract relevant columns from each dataset
 {
@@ -56,7 +56,6 @@ pcb.cali.plot <- ggplot(pcb.cali, aes(x = time, y = get(pcbi)/length,
                   color = replicate_grouped)) +
   geom_point() +
   theme_bw() +
-  #theme(aspect.ratio = 5/10) +
   labs(x = expression(bold("Time (day)")),
        y = bquote(bold(.(pcbi) ~ "(ng/cm)")),  # Display the value of pcbi in y-axis label
        color = "Replicates") +
@@ -73,6 +72,31 @@ print(pcb.cali.plot)
 # Save plot in folder
 ggsave("Output/Plots/PCB4Calibration.png",
        plot = pcb.cali.plot, width = 10, height = 5, dpi = 500)
+
+# Flask experiments -------------------------------------------------------
+# Combine data frames into one
+pcb.flask <- rbind(d.4.pcbi, d.5.pcbi)
+
+pcb.flask.plot <- ggplot(pcb.flask, aes(x = time, y = get(pcbi)/length,
+                                       color = replicate,
+                                       shape = treatment)) +
+  geom_point(size = ifelse(pcb.flask$treatment %in% c("nonshaken", "shaken"),
+                           2.5, 1)) +
+  scale_color_manual(values = c("r.1" = "blue", "r.2" = "red",
+                                "r.3" = "green")) +
+  theme_bw() +
+  labs(x = expression(bold("Time (day)")),
+       y = bquote(bold(.(pcbi) ~ "(ng/cm)")),  # Display the value of pcbi in y-axis label
+       color = "Replicates") +
+  theme(axis.text.y = element_text(face = "bold", size = 10),
+        axis.title.y = element_text(face = "bold", size = 10),
+        axis.text.x = element_text(face = "bold", size = 10),
+        axis.title.x = element_text(face = "bold", size = 10)) +
+  xlab(expression(bold("Time (day)"))) +
+  theme(axis.text.x = element_text(face = "bold", size = 10),
+        axis.title.x = element_text(face = "bold", size = 10))
+
+print(pcb.flask.plot)
 
 # All data ----------------------------------------------------------------
 # Combine data frames into one
