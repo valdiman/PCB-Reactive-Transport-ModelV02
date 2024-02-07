@@ -24,7 +24,7 @@ data.5 <- read_excel("Data/SPMECalibration.xlsx", sheet = "shaken")
 
 # Calibration data --------------------------------------------------------
 # Select individual congeners from datasets
-pcbi <- "PCB4"
+pcbi <- "PCB52"
 
 # Extract relevant columns from each dataset
 {
