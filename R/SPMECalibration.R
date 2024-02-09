@@ -53,18 +53,19 @@ system_equations <- function(t, state, parameters) {
     
     # Constants
     Af <- 0.138 # cm2 SPME area
+    Aw <- 4.9 # cm2 for a diamter of 2.5 cm
     Vf <- 0.000000069 # L/cm SPME volume/area
     L <- 30 # cm SPME length average
     Kow <- 10^(4.65) # PCB 4 octanol-water equilibrium partition coefficient
-    Kf <- 10^(1.06*log10(Kow) - 1.16) # PCB 4-SPME equilibrium partition coefficient
+    Kf <- 10^(1.06*log10(Kow) - 1.16) # PCB 4-SPME equilibrium partition coefficient [Lw/Lspme]
      
     # Unpack the parameters
     kb <- rate_b  # Bio rate constant [1/d]
     kf <- mtcf.w  # MTC from fiber/water [cm/d]
     
     # Differential equations
-    dCwdt <- - kb * Cw
-    dmfdt <- (kf * Af / L / 1000) * (Cw - mf / (Kf * Vf))
+    dCwdt <- - kb * Cw # [ng/(L d)]
+    dmfdt <- (kf * Aw / L / 1000) * (Cw - mf / (Kf * Vf)) # [ng/(cm d)]
     
     # Return the derivatives
     list(c(dCwdt, dmfdt))
@@ -73,7 +74,7 @@ system_equations <- function(t, state, parameters) {
 
 # Set initial conditions and parameters -----------------------------------
 # Estimating Cpw (PCB 4 concentration in sediment porewater)
-Ct <- 630.2023*(4.5) # ng/g PCB 4 sediment concentration
+Ct <- 630.2023*(4) # ng/g PCB 4 sediment concentration
 foc <- 0.03 # organic carbon % in sediment
 Kow <- 10^(4.65) # PCB 4 octanol-water equilibrium partition coefficient
 logKoc <- 0.94*log10(Kow) + 0.42 # koc calculation
