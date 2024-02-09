@@ -73,6 +73,26 @@ print(pcb.cali.plot)
 ggsave("Output/Plots/PCB4Calibration.png",
        plot = pcb.cali.plot, width = 10, height = 5, dpi = 500)
 
+# Plot with no replicate r.3
+pcb.cali.2 <- pcb.cali[pcb.cali$replicate_grouped != 'r.3.n', ]
+
+pcb.cali.plot.2 <- ggplot(pcb.cali.2, aes(x = time, y = get(pcbi)/length,
+                                      color = replicate_grouped)) +
+  geom_point() +
+  theme_bw() +
+  labs(x = expression(bold("Time (day)")),
+       y = bquote(bold(.(pcbi) ~ "(ng/cm)")),  # Display the value of pcbi in y-axis label
+       color = "Replicates") +
+  theme(axis.text.y = element_text(face = "bold", size = 10),
+        axis.title.y = element_text(face = "bold", size = 10),
+        axis.text.x = element_text(face = "bold", size = 10),
+        axis.title.x = element_text(face = "bold", size = 10)) +
+  xlab(expression(bold("Time (day)"))) +
+  theme(axis.text.x = element_text(face = "bold", size = 10),
+        axis.title.x = element_text(face = "bold", size = 10))
+
+print(pcb.cali.plot.2)
+
 # Flask experiments -------------------------------------------------------
 # Combine data frames into one
 pcb.flask <- rbind(d.4.pcbi, d.5.pcbi)
