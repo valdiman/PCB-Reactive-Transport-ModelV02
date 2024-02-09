@@ -20,90 +20,47 @@ rtm.SPME.1 = function(t, c, parms){
   
   # Experimental conditions
   MH2O <- 18.0152 # g/mol water molecular weight
-  MCO2 <- 44.0094 # g/mol CO2 molecular weight
   MW.pcb <- 223.088 # g/mol PCB 4 molecular weight
-  Tst <- 25 # C air temperature
-  Tst.1 <- 273.15 + Tst # air and standard temperature in K, 25 C
-  Tw <- 13 # C water temperature
-  Tw.1 <- 273.15 + Tw # water temperature in K
-  R <- 8.3144 # J/(mol K) molar gas constant 
   
-  # Bioreactor parameters
-  Vw <- 100 # cm3 water volume
-  Va <- 125 # cm3 head-space volume
-  Aaw <- 20 # cm2 air-water area
-  Aws <- 30 # cm2 sediment-water area
+  # Test tube parameters
+  Vw <- 30 # cm3 water volume
+  Aws <- 1.767 # cm2 sediment-water area, using a doiameter of 15 mm
   
   # Congener-specific constants
-  Kaw <- 0.01344142 # PCB 4 dimensionless Henry's law constant @ 25 C
-  dUaw <- 49662.48 # internal energy for the transfer of air-water for PCB 4 (J/mol)
   Kow <- 10^(4.65) # PCB 4 octanol-water equilibrium partition coefficient
-  Koa <- 10^(6.521554861) # PCB 4 octanol-air equilibrium partition coefficient
-  
-  # PUF constants 
-  Vpuf <- 0.000029 # m3 volume of PUF
-  Kpuf <- 10^(0.6366*log10(Koa) - 3.1774)# m3/g PCB 4-PUF equilibrium partition coefficient
-  d <- 0.0213*100^3 # g/m3 density of PUF
-  # ro <- 0.0005 # m3/d sampling rate
   
   # SPME fiber constants
   Af <- 0.138 # cm2 SPME area
   Vf <- 0.000000069 # L/cm SPME volume/area
   L <- 30 # cm SPME length average
   Kf <- 10^(1.06*log10(Kow) - 1.16) # PCB 4-SPME equilibrium partition coefficient
-  # ko <- 70 # cm/d PCB 4 mass transfer coefficient to SPME
-  
-  # Air & water physical conditions
-  D.water.air <- 0.2743615 # cm2/s water's diffusion coefficient in the gas phase @ Tair = 25 C, patm = 1013.25 mbars 
+
+  # Water physical conditions
   D.co2.w <- 1.67606E-05 # cm2/s CO2's diffusion coefficient in water @ Tair = 25 C, patm = 1013.25 mbars 
-  D.pcb.air <- D.water.air*(MW.pcb/MH2O)^(-0.5) # cm2/s PCB 4's diffusion coefficient in the gas phase (eq. 18-45)
   D.pcb.water <- D.co2.w*(MW.pcb/MCO2)^(-0.5) # cm2/s PCB 4's diffusion coefficient in water @ Tair = 25 C, patm = 1013.25 mbars
-  v.H2O <- 0.010072884	# cm2/s kinematic viscosity of water @ Tair = 25
-  V.water.air <- 0.003 # m/s water's velocity of air-side mass transfer without ventilation (eq. 20-15)
-  V.co2.w <- 4.1*10^-2 # m/s mass transfer coefficient of CO2 in water side without ventilation
-  # V.co2.w.2 <- 9*10^(-4)/100 # m/s new book 19-20
-  SC.pcb.w <- v.H2O/D.pcb.water # Schmidt number PCB 4
-  bl <- 0.21 # cm boundary layer thickness
-  
-  # kaw calculations (air-water mass transfer coefficient)
-  # i) Ka.w.t, ka.w corrected by water and air temps during experiment
-  Kaw.t <- Kaw*exp(-dUaw/R*(1/Tw.1-1/Tst.1))*Tw.1/Tst.1
-  # ii) Kaw.a, air-side mass transfer coefficient
-  Kaw.a <- V.water.air*(D.pcb.air/D.water.air)^(0.67) # [m/s]
-  # iii) Kaw.w, water-side mass transfer coefficient for PCB 4. 600 is the Schmidt number of CO2 at 298 K
-  Kaw.w <- V.co2.w*(SC.pcb.w/600)^(-0.5) # [m/s]
-  # Kaw.w.2 <- V.co2.w.2*(SC.pcb.w/600)^(-0.5) # [m/s]
-  # iv) kaw, overall air-water mass transfer coefficient for PCB 4
-  kaw.o <- (1/(Kaw.a*Kaw.t) + (1/Kaw.w))^-1 # [m/s]
-  # v) kaw, overall air-water mass transfer coefficient for PCB 4, units change
-  kaw.o <- kaw.o*100*60*60*24 # [cm/d]
+  bl <- 0.2 # cm boundary layer thickness
   
   # Estimating Cpw (PCB 4 concentration in sediment porewater)
   Ct <- 630.2023 # ng/g PCB 4 sediment concentration
   foc <- 0.03 # organic carbon % in sediment
   logKoc <- 0.94*log10(Kow) + 0.42 # koc calculation
   Kd <- foc*10^(logKoc) # L/kg sediment-water equilibrium partition coefficient
-  Cpw <- Ct/Kd*1000*(2) # [ng/L]
+  Cpw <- Ct/Kd*1000 # [ng/L]
   
   # Biotransformation rate
-  kb <- 0 #0.6161 # 1/d, value changes depending on experiment, i.e., control = 0, treatments LB400 = 0.178374771
+  kb <- 10000 #0.6161 # 1/d, value changes depending on experiment, i.e., control = 0, treatments LB400 = 0.178374771
   
   # flux constant passed through a list called parms
   ko <- parms$ko # cm/d
-  ro <- parms$ro # m3/d
   
+  #(D.pcb.water/bl)*Aws*60*60*24/Vw*(c["Cpw"] - c["Cw"]) + ko*Af/Vw*(c["mf"]/(Vf*Kf) - c["Cw"])
+  # + ko*Af/Vw*(c["mf"]/(Vf*Kf) - c["Cw"])  - c["Cw"]
   # derivatives dx/dt are computed below
   r <- rep(0,length(c))
   # dCwdt:
-  #r[1] <- kaw.o*Aaw/Vw*(c["Ca"]/(Kaw.t) - c["Cw"]) + D.pcb.water*Aws*60*60*24/bl/Vw*(Cpw - c["Cw"]) - kb*c["Cw"]
-  # Fix mtc sediment-water (original 0.91884)
-  r[1] <- kaw.o*Aaw/Vw*(c["Ca"]/(Kaw.t) - c["Cw"]) + 0.001*(Cpw - c["Cw"]) - kb*c["Cw"]
+  r[1] <- 0.1*(Cpw) - 1000*c["Cw"] # Cpw, Cw in [ng/L]
   # dmfdt:
   r[2] <- ko*Af*c["Cw"]/1000/L - (ko/Kf)*Af*c["mSPME"]/(Vf*Kf*L*1000) # Cw = [ng/L], mf = [ng/cm]
-  # dCadt:
-  r[3] <- kaw.o*Aaw/Va*(c["Cw"] - c["Ca"]/Kaw.t)
-  # dmpufdt:
-  r[4] <- ro*c["Ca"]*1000 - ro*(c["mPUF"]/(Vpuf*d))/(Kpuf) #  Ca = [ng/L], mpuf = [ng]
   
   # The computed derivatives are returned as a list
   # order of derivatives needs to be the same as the order of species in c
@@ -112,10 +69,10 @@ rtm.SPME.1 = function(t, c, parms){
 
 # Initial conditions and run function
 {
-  cinit <- c(Cw = 0, mSPME = 0, Ca = 0, mPUF = 0)
+  cinit <- c(Cw = 0, mSPME = 0)
   t <- c(1:75)
   # Placeholder values of key parameters
-  parms <- list(ko = 100, ro = 0.002)
+  parms <- list(ko = 10)
   out.1 <- ode(y = cinit, times = t, func = rtm.SPME.1, parms = parms)
   out.1 <- data.frame(out.1)
 }
@@ -125,18 +82,18 @@ rtm.SPME.1 = function(t, c, parms){
     gather(variable, value, -time)
   new.out.1 <- within(new.out.1,
                       variable <- factor(variable,
-                                         levels = c('Cw', 'mSPME', 'Ca', 'mPUF')))
+                                         levels = c('Cw', 'mSPME')))
 }
 
-# Export output
-write.csv(out.1, file = "Output/Data/csv/Prediction.csv")
-
-# Plot predictions for Cw, mSPME, Ca and mPUF
+# Plot predictions for Cw and mSPME
 ggplot(new.out.1, aes(x = time, y = value, color = variable)) +
   facet_wrap(vars(variable), scales = "free_y", nrow =  2) +
   geom_line(linewidth = 2) +
   theme_classic() +
   labs(x = 'time (day)', y = 'Concentration')
+
+# Export output
+write.csv(out.1, file = "Output/Data/csv/Prediction.csv")
 
 
 # Add and plot observation and predicted data -------------------------
