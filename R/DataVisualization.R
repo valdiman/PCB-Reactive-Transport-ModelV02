@@ -21,10 +21,11 @@ data.2 <- read_excel("Data/SPMECalibration.xlsx", sheet = "day42")
 data.3 <- read_excel("Data/SPMECalibration.xlsx", sheet = "day85")
 data.4 <- read_excel("Data/SPMECalibration.xlsx", sheet = "nonshaken")
 data.5 <- read_excel("Data/SPMECalibration.xlsx", sheet = "shaken")
+data.6 <- read_excel("Data/SPMECalibration.xlsx", sheet = "day5_14V2")
 
 # Calibration data --------------------------------------------------------
 # Select individual congeners from datasets
-pcbi <- "PCB52"
+pcbi <- "PCB188"
 
 # Extract relevant columns from each dataset
 {
@@ -38,10 +39,12 @@ pcbi <- "PCB52"
                          "time", "length", pcbi)]
   d.5.pcbi <- data.5[, c("sample", "treatment", "replicate",
                          "time", "length", pcbi)]
+  d.6.pcbi <- data.6[, c("sample", "treatment", "replicate",
+                         "time", "length", pcbi)]
 }
 
 # Combine data frames into one
-pcb.cali <- rbind(d.1.pcbi, d.2.pcbi, d.3.pcbi)
+pcb.cali <- rbind(d.1.pcbi, d.2.pcbi, d.3.pcbi, d.6.pcbi)
 
 # Modify replicate variable to group specific levels together
 pcb.cali$replicate_grouped <- ifelse(pcb.cali$replicate %in% c("r.3.1",
